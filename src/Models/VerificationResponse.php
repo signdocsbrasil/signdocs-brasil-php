@@ -14,9 +14,10 @@ final class VerificationResponse
      * @param string|null           $documentHash   Hash of the document
      * @param string|null           $evidenceHash   Hash of the evidence pack
      * @param array<string, mixed>  $policy         Verification policy details
-     * @param array<string, mixed>  $signer         Signer summary (displayName)
+     * @param array<string, mixed>  $signer         Signer summary (displayName, cpfCnpj)
      * @param array<array<string, mixed>> $steps    Verification steps
      * @param string|null           $tenantName     Tenant name
+     * @param string|null           $tenantCnpj     Tenant CNPJ
      * @param string|null           $createdAt      ISO 8601 creation timestamp
      * @param string|null           $completedAt    ISO 8601 completion timestamp
      */
@@ -31,6 +32,7 @@ final class VerificationResponse
         public readonly array $signer = [],
         public readonly array $steps = [],
         public readonly ?string $tenantName = null,
+        public readonly ?string $tenantCnpj = null,
         public readonly ?string $createdAt = null,
         public readonly ?string $completedAt = null,
     ) {
@@ -52,6 +54,7 @@ final class VerificationResponse
             signer: $data['signer'] ?? [],
             steps: $data['steps'] ?? [],
             tenantName: isset($data['tenantName']) ? (string) $data['tenantName'] : null,
+            tenantCnpj: isset($data['tenantCnpj']) ? (string) $data['tenantCnpj'] : null,
             createdAt: isset($data['createdAt']) ? (string) $data['createdAt'] : null,
             completedAt: isset($data['completedAt']) ? (string) $data['completedAt'] : null,
         );
@@ -80,6 +83,9 @@ final class VerificationResponse
         }
         if ($this->tenantName !== null) {
             $result['tenantName'] = $this->tenantName;
+        }
+        if ($this->tenantCnpj !== null) {
+            $result['tenantCnpj'] = $this->tenantCnpj;
         }
         if ($this->createdAt !== null) {
             $result['createdAt'] = $this->createdAt;

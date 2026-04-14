@@ -341,8 +341,12 @@ final class IntegrationTest extends TestCase
         $this->assertSame('DOCUMENT_SIGNATURE', $result->purpose);
         $this->assertSame('sha256-doc-hash', $result->documentHash);
         $this->assertSame('sha256-evidence-hash', $result->evidenceHash);
-        $this->assertSame(['displayName' => 'João Silva'], $result->signer);
+        $this->assertSame(
+            ['displayName' => 'João Silva', 'cpfCnpj' => '12345678901'],
+            $result->signer,
+        );
         $this->assertSame('Acme Corp', $result->tenantName);
+        $this->assertSame('12345678000100', $result->tenantCnpj);
         $this->assertSame('2024-11-15T00:01:00.000Z', $result->completedAt);
 
         // No auth should have been requested

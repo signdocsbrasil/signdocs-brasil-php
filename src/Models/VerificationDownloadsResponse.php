@@ -8,7 +8,12 @@ final class VerificationDownloadsResponse
 {
     /**
      * @param string               $evidenceId Evidence identifier
-     * @param array<string, mixed> $downloads  Download URLs grouped by type (evidencePack, signedPdf, finalPdf)
+     * @param array<string, mixed> $downloads  Download URLs grouped by type:
+     *                                         `originalDocument`, `evidencePack`, `finalPdf` (each may be `null`),
+     *                                         and `signedSignature` (only present for standalone signing
+     *                                         sessions; omitted for evidences belonging to a multi-signer
+     *                                         envelope — use `VerificationResource::verifyEnvelope()` for the
+     *                                         consolidated envelope-level `.p7s`).
      */
     public function __construct(
         public readonly string $evidenceId,
