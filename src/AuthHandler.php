@@ -8,20 +8,29 @@ use Firebase\JWT\JWT;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\GuzzleException;
 use SignDocsBrasil\Api\Errors\AuthenticationException;
+use SignDocsBrasil\Api\TokenCache\CachedToken;
+use SignDocsBrasil\Api\TokenCache\InMemoryTokenCache;
+use SignDocsBrasil\Api\TokenCache\TokenCacheInterface;
 
 /**
  * Handles OAuth2 client_credentials token acquisition for both
  * client_secret and private_key_jwt (ES256) authentication modes.
  *
- * Caches the access token in memory and refreshes it 30 seconds
- * before expiry.
+ * Tokens are cached via a pluggable {@see TokenCacheInterface}. The
+ * default {@see InMemoryTokenCache} preserves the pre-1.3 behavior of
+ * caching in process memory. Stateless hosts (PHP-FPM, serverless)
+ * should inject a shared-store cache (WordPress transients, APCu,
+ * Redis, etc.) to avoid fetching a fresh token on every request.
+ *
+ * Non-final since 1.3.0. Subclassing is supported, but prefer
+ * injecting a custom cache over subclassing.
  */
-final class AuthHandler
+class AuthHandler
 {
     private readonly string $tokenUrl;
-    private ?string $cachedAccessToken = null;
-    private ?float $cachedExpiresAt = null;
     private readonly ?GuzzleClient $guzzle;
+    private readonly TokenCacheInterface $cache;
+    private readonly string $cacheKey;
 
     public function __construct(
         private readonly string $clientId,
@@ -32,9 +41,12 @@ final class AuthHandler
         /** @var string[] */
         private readonly array $scopes = [],
         ?GuzzleClient $guzzle = null,
+        ?TokenCacheInterface $cache = null,
     ) {
         $this->tokenUrl = rtrim($baseUrl, '/') . '/oauth2/token';
         $this->guzzle = $guzzle;
+        $this->cache = $cache ?? new InMemoryTokenCache();
+        $this->cacheKey = self::deriveCacheKey($clientId, $baseUrl, $scopes);
     }
 
     /**
@@ -44,12 +56,9 @@ final class AuthHandler
      */
     public function getAccessToken(): string
     {
-        if (
-            $this->cachedAccessToken !== null
-            && $this->cachedExpiresAt !== null
-            && microtime(true) < ($this->cachedExpiresAt - 30)
-        ) {
-            return $this->cachedAccessToken;
+        $cached = $this->cache->get($this->cacheKey);
+        if ($cached !== null && !$cached->isExpired(microtime(true))) {
+            return $cached->accessToken;
         }
 
         return $this->fetchToken();
@@ -61,8 +70,20 @@ final class AuthHandler
      */
     public function invalidate(): void
     {
-        $this->cachedAccessToken = null;
-        $this->cachedExpiresAt = null;
+        $this->cache->delete($this->cacheKey);
+    }
+
+    /**
+     * Cache key derived deterministically from credentials + base URL +
+     * scopes. Hashed so that a leaked cache key cannot be reversed to
+     * recover the client ID.
+     */
+    public static function deriveCacheKey(string $clientId, string $baseUrl, array $scopes): string
+    {
+        $canonicalScopes = $scopes;
+        sort($canonicalScopes);
+        $material = $clientId . '|' . rtrim($baseUrl, '/') . '|' . implode(' ', $canonicalScopes);
+        return 'signdocs.oauth.' . substr(hash('sha256', $material), 0, 32);
     }
 
     /**
@@ -108,10 +129,14 @@ final class AuthHandler
 
             $expiresIn = (int) ($data['expires_in'] ?? 3600);
 
-            $this->cachedAccessToken = (string) $data['access_token'];
-            $this->cachedExpiresAt = microtime(true) + $expiresIn;
+            $token = new CachedToken(
+                accessToken: (string) $data['access_token'],
+                expiresAt: microtime(true) + $expiresIn,
+            );
 
-            return $this->cachedAccessToken;
+            $this->cache->set($this->cacheKey, $token);
+
+            return $token->accessToken;
         } catch (GuzzleException $e) {
             throw new AuthenticationException(
                 "Token request failed: {$e->getMessage()}",

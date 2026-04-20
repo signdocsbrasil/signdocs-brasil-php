@@ -6,6 +6,7 @@ namespace SignDocsBrasil\Api;
 
 use GuzzleHttp\Client as GuzzleClient;
 use Psr\Log\LoggerInterface;
+use SignDocsBrasil\Api\TokenCache\TokenCacheInterface;
 
 final class Config
 {
@@ -27,16 +28,21 @@ final class Config
     public readonly array $scopes;
 
     /**
-     * @param string               $clientId      OAuth2 client ID
-     * @param string|null          $clientSecret  OAuth2 client secret (for client_secret auth)
-     * @param string|null          $privateKey    PEM-encoded ES256 private key (for private_key_jwt auth)
-     * @param string|null          $kid           Key ID for private_key_jwt auth
-     * @param string|null          $baseUrl       API base URL (defaults to production)
-     * @param int|null             $timeout       HTTP timeout in seconds (defaults to 30)
-     * @param int|null             $maxRetries    Maximum retry attempts (defaults to 5)
-     * @param string[]|null        $scopes        OAuth2 scopes
-     * @param LoggerInterface|null $logger        PSR-3 logger for request/response logging
-     * @param GuzzleClient|null    $guzzle        Custom Guzzle client instance
+     * @param string                   $clientId      OAuth2 client ID
+     * @param string|null              $clientSecret  OAuth2 client secret (for client_secret auth)
+     * @param string|null              $privateKey    PEM-encoded ES256 private key (for private_key_jwt auth)
+     * @param string|null              $kid           Key ID for private_key_jwt auth
+     * @param string|null              $baseUrl       API base URL (defaults to production)
+     * @param int|null                 $timeout       HTTP timeout in seconds (defaults to 30)
+     * @param int|null                 $maxRetries    Maximum retry attempts (defaults to 5)
+     * @param string[]|null            $scopes        OAuth2 scopes
+     * @param LoggerInterface|null     $logger        PSR-3 logger for request/response logging
+     * @param GuzzleClient|null        $guzzle        Custom Guzzle client instance
+     * @param TokenCacheInterface|null $tokenCache    Pluggable OAuth token cache (defaults to in-memory)
+     * @param \Closure|null            $onResponse    Callback fired after every API response with a
+     *                                                {@see ResponseMetadata}. Use for observability
+     *                                                (rate limits, deprecation warnings, request IDs).
+     *                                                Signature: fn(ResponseMetadata $meta): void
      */
     public function __construct(
         public readonly string $clientId,
@@ -49,6 +55,8 @@ final class Config
         ?array $scopes = null,
         public readonly ?LoggerInterface $logger = null,
         public readonly ?GuzzleClient $guzzle = null,
+        public readonly ?TokenCacheInterface $tokenCache = null,
+        public readonly ?\Closure $onResponse = null,
     ) {
         if ($clientId === '') {
             throw new \InvalidArgumentException('clientId is required');

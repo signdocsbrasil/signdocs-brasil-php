@@ -65,6 +65,7 @@ final class SignDocsBrasilClient
             kid: $config->kid,
             baseUrl: $config->baseUrl,
             scopes: $config->scopes,
+            cache: $config->tokenCache,
         );
 
         $http = new HttpClient(
@@ -74,6 +75,7 @@ final class SignDocsBrasilClient
             maxRetries: $config->maxRetries,
             guzzle: $config->guzzle,
             logger: $config->logger,
+            onResponse: $config->onResponse,
         );
 
         $this->health = new HealthResource($http);

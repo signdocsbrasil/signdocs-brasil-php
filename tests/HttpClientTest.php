@@ -21,7 +21,7 @@ final class HttpClientTest extends TestCase
     /** @var array<int, array{request: \Psr\Http\Message\RequestInterface}> */
     private array $history = [];
 
-    private function createClient(MockHandler $apiMock, int $maxRetries = 0): HttpClient
+    private function createClient(MockHandler $apiMock, int $maxRetries = 0, ?\Closure $onResponse = null): HttpClient
     {
         $this->history = [];
         $handlerStack = HandlerStack::create($apiMock);
@@ -54,6 +54,7 @@ final class HttpClientTest extends TestCase
             auth: $auth,
             maxRetries: $maxRetries,
             guzzle: $guzzle,
+            onResponse: $onResponse,
         );
     }
 
@@ -211,5 +212,48 @@ final class HttpClientTest extends TestCase
         $req = $this->history[0]['request'];
         $key = $req->getHeaderLine('X-Idempotency-Key');
         $this->assertNotEmpty($key);
+    }
+
+    public function testOnResponseCallbackReceivesMetadata(): void
+    {
+        $mock = new MockHandler([
+            new Response(200, [
+                'Content-Type' => 'application/json',
+                'RateLimit-Limit' => '2000',
+                'RateLimit-Remaining' => '1998',
+                'X-Request-Id' => 'req_obs_1',
+            ], '{"ok":true}'),
+        ]);
+
+        /** @var list<\SignDocsBrasil\Api\ResponseMetadata> $observed */
+        $observed = [];
+        $client = $this->createClient($mock, onResponse: function ($meta) use (&$observed): void {
+            $observed[] = $meta;
+        });
+        $client->request('GET', '/v1/test');
+
+        $this->assertCount(1, $observed);
+        $this->assertSame(2000, $observed[0]->rateLimitLimit);
+        $this->assertSame(1998, $observed[0]->rateLimitRemaining);
+        $this->assertSame('req_obs_1', $observed[0]->requestId);
+        $this->assertSame(200, $observed[0]->statusCode);
+        $this->assertSame('GET', $observed[0]->method);
+        $this->assertSame('/v1/test', $observed[0]->path);
+    }
+
+    public function testOnResponseCallbackExceptionDoesNotBreakRequest(): void
+    {
+        $mock = new MockHandler([
+            new Response(200, ['Content-Type' => 'application/json'], '{"ok":true}'),
+        ]);
+
+        $client = $this->createClient($mock, onResponse: function ($_): void {
+            throw new \RuntimeException('observer failed');
+        });
+
+        // Must not throw: observability must never break the request path.
+        $result = $client->request('GET', '/v1/test');
+
+        $this->assertSame(['ok' => true], $result);
     }
 }

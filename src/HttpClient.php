@@ -19,11 +19,12 @@ use SignDocsBrasil\Api\Errors\TimeoutException;
  */
 class HttpClient
 {
-    private const SDK_VERSION = '1.0.0';
+    private const SDK_VERSION = '1.3.0';
 
     private readonly GuzzleClient $guzzle;
     private readonly RetryHandler $retry;
     private readonly ?LoggerInterface $logger;
+    private readonly ?\Closure $onResponse;
 
     public function __construct(
         private readonly string $baseUrl,
@@ -32,6 +33,7 @@ class HttpClient
         int $maxRetries,
         ?GuzzleClient $guzzle = null,
         ?LoggerInterface $logger = null,
+        ?\Closure $onResponse = null,
     ) {
         $this->guzzle = $guzzle ?? new GuzzleClient([
             'base_uri' => rtrim($baseUrl, '/') . '/',
@@ -42,6 +44,7 @@ class HttpClient
 
         $this->retry = new RetryHandler($maxRetries);
         $this->logger = $logger;
+        $this->onResponse = $onResponse;
     }
 
     /**
@@ -76,6 +79,8 @@ class HttpClient
                 $response = $this->doRequest($method, $path, $body, $query, $headers, $noAuth, $timeout);
                 $statusCode = $response->getStatusCode();
                 $durationMs = (int) round((microtime(true) - $startTime) * 1000);
+
+                $this->fireOnResponse($response, $method, $path);
 
                 if (!$this->retry->isRetryable($statusCode)) {
                     if ($statusCode >= 400) {
@@ -282,6 +287,29 @@ class HttpClient
         }
 
         return $body;
+    }
+
+    /**
+     * Invoke the onResponse observer callback, if configured. Any exception
+     * thrown by the callback is logged but does not propagate — observability
+     * must never break the request path.
+     */
+    private function fireOnResponse(ResponseInterface $response, string $method, string $path): void
+    {
+        if ($this->onResponse === null) {
+            return;
+        }
+
+        try {
+            $meta = ResponseMetadata::fromResponse($response, $method, $path);
+            ($this->onResponse)($meta);
+        } catch (\Throwable $e) {
+            $this->logger?->warning('onResponse callback threw', [
+                'error' => $e->getMessage(),
+                'method' => $method,
+                'path' => $path,
+            ]);
+        }
     }
 
     /**

@@ -12,6 +12,9 @@ use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use SignDocsBrasil\Api\AuthHandler;
 use SignDocsBrasil\Api\Errors\AuthenticationException;
+use SignDocsBrasil\Api\TokenCache\CachedToken;
+use SignDocsBrasil\Api\TokenCache\InMemoryTokenCache;
+use SignDocsBrasil\Api\TokenCache\TokenCacheInterface;
 
 final class AuthHandlerTest extends TestCase
 {
@@ -23,6 +26,7 @@ final class AuthHandlerTest extends TestCase
         ?string $clientSecret = 'test-secret',
         ?string $privateKey = null,
         ?string $kid = null,
+        ?TokenCacheInterface $cache = null,
     ): AuthHandler {
         $this->history = [];
         $handlerStack = HandlerStack::create($mock);
@@ -37,6 +41,7 @@ final class AuthHandlerTest extends TestCase
             baseUrl: 'https://api.signdocs.com.br',
             scopes: ['transactions:read', 'transactions:write'],
             guzzle: $guzzle,
+            cache: $cache,
         );
     }
 
@@ -133,5 +138,115 @@ final class AuthHandlerTest extends TestCase
 
         $body = (string) $this->history[0]['request']->getBody();
         $this->assertStringContainsString('scope=', $body);
+    }
+
+    public function testTokenCacheHit(): void
+    {
+        // Pre-populate the shared cache with a valid token. No HTTP call
+        // should be made on getAccessToken().
+        $cache = new InMemoryTokenCache();
+        $key = AuthHandler::deriveCacheKey(
+            clientId: 'test-client',
+            baseUrl: 'https://api.signdocs.com.br',
+            scopes: ['transactions:read', 'transactions:write'],
+        );
+        $cache->set($key, new CachedToken(
+            accessToken: 'tok_prewarmed',
+            expiresAt: microtime(true) + 3600,
+        ));
+
+        $mock = new MockHandler([]); // Empty: any HTTP call would throw.
+        $auth = $this->createAuth($mock, cache: $cache);
+
+        $token = $auth->getAccessToken();
+
+        $this->assertSame('tok_prewarmed', $token);
+        $this->assertCount(0, $this->history);
+    }
+
+    public function testTokenCachePersistsAcrossInstances(): void
+    {
+        // Two separate AuthHandler instances sharing the same cache
+        // should reuse the token — simulates PHP-FPM / serverless workers
+        // sharing a WP transient / APCu / Redis cache.
+        $cache = new InMemoryTokenCache();
+
+        $mock1 = new MockHandler([$this->tokenResponse('tok_shared', 3600)]);
+        $auth1 = $this->createAuth($mock1, cache: $cache);
+        $t1 = $auth1->getAccessToken();
+
+        $mock2 = new MockHandler([]); // Empty: no HTTP allowed.
+        $auth2 = $this->createAuth($mock2, cache: $cache);
+        $t2 = $auth2->getAccessToken();
+
+        $this->assertSame('tok_shared', $t1);
+        $this->assertSame('tok_shared', $t2);
+    }
+
+    public function testTokenCacheExpiry(): void
+    {
+        // Cache holds a token whose expiresAt is already in the past.
+        // getAccessToken() must discard it and fetch fresh.
+        $cache = new InMemoryTokenCache();
+        $key = AuthHandler::deriveCacheKey(
+            clientId: 'test-client',
+            baseUrl: 'https://api.signdocs.com.br',
+            scopes: ['transactions:read', 'transactions:write'],
+        );
+        $cache->set($key, new CachedToken(
+            accessToken: 'tok_expired',
+            expiresAt: microtime(true) - 10,
+        ));
+
+        $mock = new MockHandler([$this->tokenResponse('tok_refreshed', 3600)]);
+        $auth = $this->createAuth($mock, cache: $cache);
+
+        $token = $auth->getAccessToken();
+
+        $this->assertSame('tok_refreshed', $token);
+        $this->assertCount(1, $this->history);
+    }
+
+    public function testInvalidateRemovesFromCache(): void
+    {
+        $cache = new InMemoryTokenCache();
+        $mock = new MockHandler([
+            $this->tokenResponse('tok_1', 3600),
+            $this->tokenResponse('tok_2', 3600),
+        ]);
+        $auth = $this->createAuth($mock, cache: $cache);
+
+        $auth->getAccessToken();
+        $auth->invalidate();
+        $t2 = $auth->getAccessToken();
+
+        $this->assertSame('tok_2', $t2);
+        $this->assertCount(2, $this->history);
+
+        // After invalidate(), the cache slot for this key is empty.
+        $key = AuthHandler::deriveCacheKey(
+            clientId: 'test-client',
+            baseUrl: 'https://api.signdocs.com.br',
+            scopes: ['transactions:read', 'transactions:write'],
+        );
+        // The second fetch populated it again; sanity check presence.
+        $this->assertNotNull($cache->get($key));
+    }
+
+    public function testDeriveCacheKeyIsDeterministicAndHashed(): void
+    {
+        $k1 = AuthHandler::deriveCacheKey('client_acme_123', 'https://api.example/', ['s1', 's2']);
+        $k2 = AuthHandler::deriveCacheKey('client_acme_123', 'https://api.example', ['s2', 's1']);
+        $k3 = AuthHandler::deriveCacheKey('client_other', 'https://api.example', ['s1', 's2']);
+
+        // Trailing slash + scope order must not change the key.
+        $this->assertSame($k1, $k2);
+        // Different clientId must produce a different key.
+        $this->assertNotSame($k1, $k3);
+        // Key must not leak the clientId as plaintext.
+        $this->assertStringNotContainsString('client_acme_123', $k1);
+        // Key has the expected prefix + fixed-length hash shape.
+        $this->assertStringStartsWith('signdocs.oauth.', $k1);
+        $this->assertSame(15 + 32, strlen($k1));
     }
 }

@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-04-20
+
+### Added
+
+- `SignDocsBrasil\Api\TokenCache\TokenCacheInterface` — pluggable OAuth token cache. Inject via `new Config(tokenCache: $myCache)` to share tokens across PHP-FPM / serverless workers. Default `InMemoryTokenCache` preserves pre-1.3 single-process behavior.
+- `SignDocsBrasil\Api\TokenCache\CachedToken` value object and `SignDocsBrasil\Api\TokenCache\InMemoryTokenCache` default implementation.
+- `SignDocsBrasil\Api\ResponseMetadata` — captures `RateLimit-*`, `Deprecation`, `Sunset`, and request-ID headers from every API response. Register an observer via `new Config(onResponse: fn(ResponseMetadata $m) => ...)`.
+- `SignDocsBrasil\Api\WebhookEventType` — PHP 8.1 string-backed enum with all 17 canonical event types, matching the OpenAPI spec `WebhookEventType`. Includes NT65 `isNt65()` predicate.
+- Webhook event types for the NT65 INSS consignado flow:
+  - `STEP.PURPOSE_DISCLOSURE_SENT` — purpose-disclosure notification delivered to the beneficiary
+  - `TRANSACTION.DEADLINE_APPROACHING` — ≤2 business days remaining until the INSS submission deadline
+
+### Changed
+
+- `SignDocsBrasil\Api\AuthHandler` is no longer `final`. Subclassing is supported; prefer injecting a `TokenCacheInterface` over subclassing for most use cases.
+- `AuthHandler::getAccessToken()` now reads from and writes to the configured `TokenCacheInterface`. Cache keys are derived deterministically from `clientId + baseUrl + scopes` (SHA-256 truncated to 32 chars) so the same credentials reuse the same cached token across process boundaries.
+- `AuthHandler::invalidate()` now deletes the cache entry instead of clearing an internal field.
+- `SDK_VERSION` bumped to `1.3.0` (sent as `User-Agent`).
+
+### Deprecated
+
+- None.
+
+### Fixed
+
+- None.
+
 ## [1.2.0] - 2026-04-14
 
 ### Added
