@@ -7,13 +7,13 @@ namespace SignDocsBrasil\Api\Models;
 final class EnvelopeSessionSummary
 {
     /**
-     * @param string      $sessionId     Unique session identifier
-     * @param string      $transactionId Associated transaction identifier
-     * @param int         $signerIndex   Index of the signer in the envelope
-     * @param string      $signerName    Display name of the signer
-     * @param string      $status        Session status
-     * @param string|null $completedAt   ISO 8601 completion timestamp
-     * @param string|null $evidenceId    Evidence identifier when completed
+     * @param string      $sessionId     Unique session identifier.
+     * @param string      $transactionId Underlying transaction identifier.
+     * @param int         $signerIndex   Index of the signer in the envelope.
+     * @param string      $signerName    Display name of the signer.
+     * @param string      $status        Session status.
+     * @param string|null $completedAt   ISO 8601 completion timestamp (UTC).
+     * @param string|null $evidenceId    Evidence identifier, present when status is COMPLETED.
      */
     public function __construct(
         public readonly string $sessionId,
@@ -40,5 +40,28 @@ final class EnvelopeSessionSummary
             completedAt: isset($data['completedAt']) ? (string) $data['completedAt'] : null,
             evidenceId: isset($data['evidenceId']) ? (string) $data['evidenceId'] : null,
         );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        $result = [
+            'sessionId' => $this->sessionId,
+            'transactionId' => $this->transactionId,
+            'signerIndex' => $this->signerIndex,
+            'signerName' => $this->signerName,
+            'status' => $this->status,
+        ];
+
+        if ($this->completedAt !== null) {
+            $result['completedAt'] = $this->completedAt;
+        }
+        if ($this->evidenceId !== null) {
+            $result['evidenceId'] = $this->evidenceId;
+        }
+
+        return $result;
     }
 }

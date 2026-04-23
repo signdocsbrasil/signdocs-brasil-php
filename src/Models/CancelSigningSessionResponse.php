@@ -7,12 +7,14 @@ namespace SignDocsBrasil\Api\Models;
 final class CancelSigningSessionResponse
 {
     /**
-     * @param string $sessionId   Signing session identifier
-     * @param string $status      Session status after cancellation
-     * @param string $cancelledAt ISO 8601 cancellation timestamp
+     * @param string $sessionId     Signing session identifier.
+     * @param string $transactionId Underlying transaction identifier.
+     * @param string $status        Session status after cancellation (CANCELLED).
+     * @param string $cancelledAt   ISO 8601 cancellation timestamp (UTC).
      */
     public function __construct(
         public readonly string $sessionId,
+        public readonly string $transactionId,
         public readonly string $status,
         public readonly string $cancelledAt,
     ) {
@@ -25,6 +27,7 @@ final class CancelSigningSessionResponse
     {
         return new self(
             sessionId: (string) ($data['sessionId'] ?? ''),
+            transactionId: (string) ($data['transactionId'] ?? ''),
             status: (string) ($data['status'] ?? ''),
             cancelledAt: (string) ($data['cancelledAt'] ?? ''),
         );
@@ -37,6 +40,7 @@ final class CancelSigningSessionResponse
     {
         return [
             'sessionId' => $this->sessionId,
+            'transactionId' => $this->transactionId,
             'status' => $this->status,
             'cancelledAt' => $this->cancelledAt,
         ];

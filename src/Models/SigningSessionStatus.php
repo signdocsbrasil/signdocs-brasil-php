@@ -7,18 +7,18 @@ namespace SignDocsBrasil\Api\Models;
 final class SigningSessionStatus
 {
     /**
-     * @param string                       $sessionId
-     * @param string                       $status
-     * @param array<int, array<string, mixed>>  $signers   Per-signer status list
-     * @param string                       $updatedAt
-     * @param string|null                  $completedAt
+     * @param string      $sessionId     Unique session identifier.
+     * @param string      $transactionId Underlying transaction identifier.
+     * @param string      $status        Session status (ACTIVE, COMPLETED, CANCELLED, EXPIRED, FAILED).
+     * @param string|null $completedAt   ISO 8601 completion timestamp (UTC), present when status is COMPLETED.
+     * @param string|null $evidenceId    Evidence identifier, present when status is COMPLETED.
      */
     public function __construct(
         public readonly string $sessionId,
+        public readonly string $transactionId,
         public readonly string $status,
-        public readonly array $signers,
-        public readonly string $updatedAt,
         public readonly ?string $completedAt = null,
+        public readonly ?string $evidenceId = null,
     ) {
     }
 
@@ -29,10 +29,10 @@ final class SigningSessionStatus
     {
         return new self(
             sessionId: (string) ($data['sessionId'] ?? ''),
+            transactionId: (string) ($data['transactionId'] ?? ''),
             status: (string) ($data['status'] ?? ''),
-            signers: $data['signers'] ?? [],
-            updatedAt: (string) ($data['updatedAt'] ?? ''),
             completedAt: isset($data['completedAt']) ? (string) $data['completedAt'] : null,
+            evidenceId: isset($data['evidenceId']) ? (string) $data['evidenceId'] : null,
         );
     }
 
@@ -43,13 +43,15 @@ final class SigningSessionStatus
     {
         $result = [
             'sessionId' => $this->sessionId,
+            'transactionId' => $this->transactionId,
             'status' => $this->status,
-            'signers' => $this->signers,
-            'updatedAt' => $this->updatedAt,
         ];
 
         if ($this->completedAt !== null) {
             $result['completedAt'] = $this->completedAt;
+        }
+        if ($this->evidenceId !== null) {
+            $result['evidenceId'] = $this->evidenceId;
         }
 
         return $result;
