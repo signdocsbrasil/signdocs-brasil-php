@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace SignDocsBrasil\Api\Models;
 
+/**
+ * Response of `POST /v1/webhooks/{webhookId}/test`. Carries the
+ * webhook ID being tested and the per-attempt {@see WebhookTestDelivery}
+ * result describing whether the test endpoint accepted the delivery.
+ */
 final class WebhookTestResponse
 {
     public function __construct(
-        public readonly string $deliveryId,
-        public readonly string $status,
-        public readonly ?int $statusCode = null,
+        public readonly string $webhookId,
+        public readonly WebhookTestDelivery $testDelivery,
     ) {
     }
 
@@ -18,10 +22,11 @@ final class WebhookTestResponse
      */
     public static function fromArray(array $data): self
     {
+        $delivery = is_array($data['testDelivery'] ?? null) ? $data['testDelivery'] : [];
+
         return new self(
-            deliveryId: (string) ($data['deliveryId'] ?? ''),
-            status: (string) ($data['status'] ?? ''),
-            statusCode: isset($data['statusCode']) ? (int) $data['statusCode'] : null,
+            webhookId: (string) ($data['webhookId'] ?? ''),
+            testDelivery: WebhookTestDelivery::fromArray($delivery),
         );
     }
 
@@ -30,15 +35,9 @@ final class WebhookTestResponse
      */
     public function toArray(): array
     {
-        $result = [
-            'deliveryId' => $this->deliveryId,
-            'status' => $this->status,
+        return [
+            'webhookId' => $this->webhookId,
+            'testDelivery' => $this->testDelivery->toArray(),
         ];
-
-        if ($this->statusCode !== null) {
-            $result['statusCode'] = $this->statusCode;
-        }
-
-        return $result;
     }
 }

@@ -854,24 +854,50 @@ final class ModelsTest extends TestCase
     public function testWebhookTestResponseFromArray(): void
     {
         $resp = WebhookTestResponse::fromArray([
-            'deliveryId' => 'del_1',
-            'status' => 'delivered',
-            'statusCode' => 200,
+            'webhookId' => 'wh_1',
+            'testDelivery' => [
+                'httpStatus' => 200,
+                'success' => true,
+                'timestamp' => '2026-04-27T01:23:28.323Z',
+            ],
         ]);
 
-        $this->assertSame('del_1', $resp->deliveryId);
-        $this->assertSame('delivered', $resp->status);
-        $this->assertSame(200, $resp->statusCode);
+        $this->assertSame('wh_1', $resp->webhookId);
+        $this->assertSame(200, $resp->testDelivery->httpStatus);
+        $this->assertTrue($resp->testDelivery->success);
+        $this->assertSame('2026-04-27T01:23:28.323Z', $resp->testDelivery->timestamp);
+        $this->assertNull($resp->testDelivery->error);
     }
 
-    public function testWebhookTestResponseWithoutStatusCode(): void
+    public function testWebhookTestResponseWithError(): void
     {
         $resp = WebhookTestResponse::fromArray([
-            'deliveryId' => 'del_2',
-            'status' => 'failed',
+            'webhookId' => 'wh_2',
+            'testDelivery' => [
+                'httpStatus' => 502,
+                'success' => false,
+                'timestamp' => '2026-04-27T01:30:00.000Z',
+                'error' => 'Connection refused',
+            ],
         ]);
 
-        $this->assertNull($resp->statusCode);
+        $this->assertSame('wh_2', $resp->webhookId);
+        $this->assertFalse($resp->testDelivery->success);
+        $this->assertSame('Connection refused', $resp->testDelivery->error);
+    }
+
+    public function testWebhookTestResponseRoundTrip(): void
+    {
+        $payload = [
+            'webhookId' => 'wh_round',
+            'testDelivery' => [
+                'httpStatus' => 200,
+                'success' => true,
+                'timestamp' => '2026-04-27T02:00:00.000Z',
+            ],
+        ];
+        $resp = WebhookTestResponse::fromArray($payload);
+        $this->assertSame($payload, $resp->toArray());
     }
 
     // ── Evidence ────────────────────────────────────────────────────
