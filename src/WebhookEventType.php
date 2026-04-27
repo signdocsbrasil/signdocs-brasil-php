@@ -34,6 +34,10 @@ enum WebhookEventType: string
     case SigningSessionCancelled = 'SIGNING_SESSION.CANCELLED';
     case SigningSessionExpired = 'SIGNING_SESSION.EXPIRED';
 
+    case EnvelopeCreated = 'ENVELOPE.CREATED';
+    case EnvelopeAllSigned = 'ENVELOPE.ALL_SIGNED';
+    case EnvelopeExpired = 'ENVELOPE.EXPIRED';
+
     /**
      * True if this event is part of the NT65 INSS consignado flow and
      * only emitted for tenants with `nt65ComplianceEnabled`.

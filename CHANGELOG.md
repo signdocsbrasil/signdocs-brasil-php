@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-04-27
+
+### Added
+
+- `?string $envelopeId` constructor parameter on `VerificationResponse` (also surfaced via `toArray()` / `fromArray()`) — populated when the verified evidence belongs to a multi-signer envelope. Use it with `$client->verification()->verifyEnvelope($envelopeId)` for cross-signer drill-down.
+- Three new `WebhookEventType` enum cases:
+  - `EnvelopeCreated` (`ENVELOPE.CREATED`)
+  - `EnvelopeAllSigned` (`ENVELOPE.ALL_SIGNED`)
+  - `EnvelopeExpired` (`ENVELOPE.EXPIRED`)
+
+### Changed
+
+- `User-Agent` bumped to `signdocs-brasil-php/1.5.0`.
+
 ## [1.4.1] - 2026-04-27
 
 ### Fixed

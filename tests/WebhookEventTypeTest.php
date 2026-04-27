@@ -31,6 +31,9 @@ final class WebhookEventTypeTest extends TestCase
         'SIGNING_SESSION.COMPLETED',
         'SIGNING_SESSION.CANCELLED',
         'SIGNING_SESSION.EXPIRED',
+        'ENVELOPE.CREATED',
+        'ENVELOPE.ALL_SIGNED',
+        'ENVELOPE.EXPIRED',
     ];
 
     public function testAllSpecEventsExist(): void

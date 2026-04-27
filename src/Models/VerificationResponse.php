@@ -20,6 +20,7 @@ final class VerificationResponse
      * @param string|null           $tenantCnpj     Tenant CNPJ
      * @param string|null           $createdAt      ISO 8601 creation timestamp
      * @param string|null           $completedAt    ISO 8601 completion timestamp
+     * @param string|null           $envelopeId     Parent envelope ID (only when evidence belongs to a multi-signer envelope)
      */
     public function __construct(
         public readonly string $evidenceId,
@@ -35,6 +36,7 @@ final class VerificationResponse
         public readonly ?string $tenantCnpj = null,
         public readonly ?string $createdAt = null,
         public readonly ?string $completedAt = null,
+        public readonly ?string $envelopeId = null,
     ) {
     }
 
@@ -57,6 +59,7 @@ final class VerificationResponse
             tenantCnpj: isset($data['tenantCnpj']) ? (string) $data['tenantCnpj'] : null,
             createdAt: isset($data['createdAt']) ? (string) $data['createdAt'] : null,
             completedAt: isset($data['completedAt']) ? (string) $data['completedAt'] : null,
+            envelopeId: isset($data['envelopeId']) ? (string) $data['envelopeId'] : null,
         );
     }
 
@@ -92,6 +95,9 @@ final class VerificationResponse
         }
         if ($this->completedAt !== null) {
             $result['completedAt'] = $this->completedAt;
+        }
+        if ($this->envelopeId !== null) {
+            $result['envelopeId'] = $this->envelopeId;
         }
 
         return $result;
