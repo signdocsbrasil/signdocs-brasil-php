@@ -9,6 +9,7 @@ use SignDocsBrasil\Api\Models\AdvanceSessionRequest;
 use SignDocsBrasil\Api\Models\AdvanceSessionResponse;
 use SignDocsBrasil\Api\Models\CancelSigningSessionResponse;
 use SignDocsBrasil\Api\Models\CreateSigningSessionRequest;
+use SignDocsBrasil\Api\Models\ResendOtpRequest;
 use SignDocsBrasil\Api\Models\SigningSession;
 use SignDocsBrasil\Api\Models\SigningSessionBootstrap;
 use SignDocsBrasil\Api\Models\SigningSessionListParams;
@@ -119,11 +120,17 @@ final class SigningSessionsResource
      *
      * POST /v1/signing-sessions/{sessionId}/resend-otp
      */
-    public function resendOtp(string $sessionId, ?int $timeout = null): AdvanceSessionResponse
-    {
+    public function resendOtp(
+        string $sessionId,
+        ?ResendOtpRequest $request = null,
+        ?int $timeout = null,
+    ): AdvanceSessionResponse {
+        $body = $request?->toArray();
+
         $data = $this->http->request(
             'POST',
             "/v1/signing-sessions/{$sessionId}/resend-otp",
+            body: $body !== null && $body !== [] ? $body : null,
             timeout: $timeout,
         );
 

@@ -14,6 +14,7 @@ final class AdvanceSessionRequest
      * @param string|null                  $signatureRequestId  Signature request ID (required for complete_signing)
      * @param string|null                  $rawSignatureBase64  Raw signature in base64 (required for complete_signing)
      * @param array<string, mixed>|null    $geolocation         Geolocation data
+     * @param string|null                  $otpChannel          OTP delivery channel (sms, email, whatsapp)
      */
     public function __construct(
         public readonly string $action,
@@ -23,6 +24,7 @@ final class AdvanceSessionRequest
         public readonly ?string $signatureRequestId = null,
         public readonly ?string $rawSignatureBase64 = null,
         public readonly ?array $geolocation = null,
+        public readonly ?string $otpChannel = null,
     ) {
     }
 
@@ -50,6 +52,9 @@ final class AdvanceSessionRequest
         }
         if ($this->geolocation !== null) {
             $result['geolocation'] = $this->geolocation;
+        }
+        if ($this->otpChannel !== null) {
+            $result['otpChannel'] = $this->otpChannel;
         }
 
         return $result;

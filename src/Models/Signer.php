@@ -16,6 +16,7 @@ final class Signer
         public readonly ?string $cnpj = null,
         public readonly ?string $birthDate = null,
         public readonly ?string $otpChannel = null,
+        public readonly ?bool $otpChannelSelectable = null,
     ) {
     }
 
@@ -34,6 +35,7 @@ final class Signer
             cnpj: isset($data['cnpj']) ? (string) $data['cnpj'] : null,
             birthDate: isset($data['birthDate']) ? (string) $data['birthDate'] : null,
             otpChannel: isset($data['otpChannel']) ? (string) $data['otpChannel'] : null,
+            otpChannelSelectable: isset($data['otpChannelSelectable']) ? (bool) $data['otpChannelSelectable'] : null,
         );
     }
 
@@ -67,6 +69,9 @@ final class Signer
         }
         if ($this->otpChannel !== null) {
             $result['otpChannel'] = $this->otpChannel;
+        }
+        if ($this->otpChannelSelectable !== null) {
+            $result['otpChannelSelectable'] = $this->otpChannelSelectable;
         }
 
         return $result;

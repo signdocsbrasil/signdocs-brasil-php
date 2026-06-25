@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-06-19
+
+### Added
+
+- `?bool $otpChannelSelectable` constructor parameter on `Signer` (also surfaced via `toArray()` / `fromArray()`) — lets a signer choose their OTP delivery channel at create-session time.
+- `?string $otpChannel` constructor parameter on `AdvanceSessionRequest` (emitted via `toArray()` when set) — selects the OTP delivery channel when advancing a session.
+- New `ResendOtpRequest` model with a `?string $channel` property and `toArray()`.
+- `SigningSessionsResource::resendOtp()` now accepts an optional `ResendOtpRequest $request` and POSTs the JSON body when a channel is provided (backward compatible — channel is optional).
+- The `signer` payload on `SigningSessionBootstrap` is a raw associative array, so `availableOtpChannels` / `otpChannelSelectable` already pass through unchanged.
+
+### Changed
+
+- `User-Agent` bumped to `signdocs-brasil-php/1.6.0`.
+
 ## [1.5.0] - 2026-04-27
 
 ### Added
