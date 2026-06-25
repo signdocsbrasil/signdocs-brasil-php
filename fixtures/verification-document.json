@@ -1,0 +1,33 @@
+{
+  "description": "Verify a PDF for embedded signatures (authenticated, requires verification:write, production credentials only)",
+  "input": {
+    "content": "JVBERi0xLjQK",
+    "filename": "contract.pdf"
+  },
+  "expected_request": {
+    "method": "POST",
+    "path": "/v1/verify/document",
+    "no_auth": false,
+    "body": {
+      "content": "JVBERi0xLjQK",
+      "filename": "contract.pdf"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "signed": true,
+      "signatureCount": 1,
+      "signatures": [
+        {
+          "method": "byte_range_scan",
+          "type": "pkcs7",
+          "subFilter": "adbe.pkcs7.detached",
+          "filter": "Adobe.PPKLite",
+          "confidence": 1.0
+        }
+      ],
+      "checkedAt": "2024-11-15T00:00:00.000Z"
+    }
+  }
+}

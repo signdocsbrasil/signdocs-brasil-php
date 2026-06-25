@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-06-25
+
+### Added
+
+- `$client->verification->verifyDocument(...)` — new method for the `POST /v1/verify/document` endpoint. Inspects a base64-encoded PDF for embedded signatures and returns a `VerifyDocumentResponse` (`signed`, `signatureCount`, `signatures[]`, `checkedAt`). Unlike the other `verification` methods, this endpoint is **authenticated** (sends a Bearer JWT) and requires the `verification:write` scope. It is **production-credentials-only** at runtime — the SDK does not enforce that, but HML credentials are rejected by the API.
+- `VerifyDocumentRequest` model (`content`, optional `filename`) — mirrors `UploadDocumentRequest`. `verifyDocument()` also accepts a raw associative array body.
+- `VerifyDocumentResponse` model wrapping a list of `DetectedSignature` value objects.
+- `DetectedSignature` model (`method`, `type`, `confidence`, optional `subFilter` / `filter`), where `type` is one of `pades`, `pkcs7`, `legacy`, `digital_certificate`.
+
+### Changed
+
+- `User-Agent` bumped to `signdocs-brasil-php/1.7.0`.
+
 ## [1.6.0] - 2026-06-19
 
 ### Added

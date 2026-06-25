@@ -243,6 +243,62 @@ final class ResourcesTest extends TestCase
         $verification->downloads('ev_1');
     }
 
+    public function testVerificationVerifyDocumentAuthenticated(): void
+    {
+        $http = $this->mockHttp();
+        $http->expects($this->once())
+            ->method('request')
+            ->with('POST', '/v1/verify/document', ['content' => 'JVBERi0xLjQK', 'filename' => 'contract.pdf'])
+            ->willReturn([
+                'signed' => true,
+                'signatureCount' => 1,
+                'signatures' => [
+                    [
+                        'method' => 'byte_range_scan',
+                        'type' => 'pkcs7',
+                        'subFilter' => 'adbe.pkcs7.detached',
+                        'filter' => 'Adobe.PPKLite',
+                        'confidence' => 1.0,
+                    ],
+                ],
+                'checkedAt' => '2024-11-15T00:00:00.000Z',
+            ]);
+
+        $verification = new \SignDocsBrasil\Api\Resources\VerificationResource($http);
+        $response = $verification->verifyDocument(
+            new \SignDocsBrasil\Api\Models\VerifyDocumentRequest(content: 'JVBERi0xLjQK', filename: 'contract.pdf'),
+        );
+
+        $this->assertTrue($response->signed);
+        $this->assertSame(1, $response->signatureCount);
+        $this->assertCount(1, $response->signatures);
+        $this->assertSame('pkcs7', $response->signatures[0]->type);
+        $this->assertSame('adbe.pkcs7.detached', $response->signatures[0]->subFilter);
+        $this->assertSame(1.0, $response->signatures[0]->confidence);
+        $this->assertSame('2024-11-15T00:00:00.000Z', $response->checkedAt);
+    }
+
+    public function testVerificationVerifyDocumentAcceptsArrayBody(): void
+    {
+        $http = $this->mockHttp();
+        $http->expects($this->once())
+            ->method('request')
+            ->with('POST', '/v1/verify/document', ['content' => 'JVBERi0xLjQK'])
+            ->willReturn([
+                'signed' => false,
+                'signatureCount' => 0,
+                'signatures' => [],
+                'checkedAt' => '2024-11-15T00:00:00.000Z',
+            ]);
+
+        $verification = new \SignDocsBrasil\Api\Resources\VerificationResource($http);
+        $response = $verification->verifyDocument(['content' => 'JVBERi0xLjQK']);
+
+        $this->assertFalse($response->signed);
+        $this->assertSame(0, $response->signatureCount);
+        $this->assertSame([], $response->signatures);
+    }
+
     public function testDocumentGroupsCombinedStamp(): void
     {
         $http = $this->mockHttp();

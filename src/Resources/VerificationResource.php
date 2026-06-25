@@ -8,6 +8,8 @@ use SignDocsBrasil\Api\HttpClient;
 use SignDocsBrasil\Api\Models\EnvelopeVerificationResponse;
 use SignDocsBrasil\Api\Models\VerificationDownloadsResponse;
 use SignDocsBrasil\Api\Models\VerificationResponse;
+use SignDocsBrasil\Api\Models\VerifyDocumentRequest;
+use SignDocsBrasil\Api\Models\VerifyDocumentResponse;
 
 final class VerificationResource
 {
@@ -69,5 +71,31 @@ final class VerificationResource
         );
 
         return EnvelopeVerificationResponse::fromArray($data ?? []);
+    }
+
+    /**
+     * Inspect a PDF for embedded signatures and report what was detected.
+     *
+     * POST /v1/verify/document
+     *
+     * Unlike the other verification methods, this endpoint is AUTHENTICATED
+     * (a Bearer JWT is sent) and requires the `verification:write` scope.
+     * It is production-credentials-only at runtime — the SDK does not enforce
+     * that, but HML credentials will be rejected by the API.
+     *
+     * @param VerifyDocumentRequest|array<string, mixed> $request Base64 PDF content (and optional filename)
+     */
+    public function verifyDocument(VerifyDocumentRequest|array $request, ?int $timeout = null): VerifyDocumentResponse
+    {
+        $body = $request instanceof VerifyDocumentRequest ? $request->toArray() : $request;
+
+        $data = $this->http->request(
+            'POST',
+            '/v1/verify/document',
+            $body,
+            timeout: $timeout,
+        );
+
+        return VerifyDocumentResponse::fromArray($data ?? []);
     }
 }
