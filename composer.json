@@ -16,7 +16,8 @@
     "homepage": "https://signdocs.com.br",
     "support": {
         "issues": "https://github.com/signdocsbrasil/signdocs-brasil-php/issues",
-        "source": "https://github.com/signdocsbrasil/signdocs-brasil-php"
+        "source": "https://github.com/signdocsbrasil/signdocs-brasil-php",
+        "docs": "https://docs.signdocs.com.br"
     },
     "authors": [
         {
