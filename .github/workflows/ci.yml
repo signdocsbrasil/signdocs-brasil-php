@@ -1,5 +1,15 @@
 name: CI
 
+# NOTE: push-triggered runs have historically never fired on this repository.
+# From the repo's creation (8 Apr 2026) until 30 Jul 2026 the only workflow run
+# on record was a manual dispatch — which is why `workflow_dispatch` was added
+# the same day the repo was created ("fix: add workflow_dispatch trigger to CI").
+# Everything checkable is identical to the sibling SDK repos that do trigger on
+# push: workflow state active, valid `on:` block, regular file mode, Actions
+# enabled with allowed_actions=all, no rulesets, push events delivered and
+# visible in the repo event feed. If push runs are still missing, toggle Actions
+# off and on in repo settings to re-wire the trigger, and escalate to GitHub
+# Support if that doesn't take — do not assume the workflow file is at fault.
 on:
   push:
     branches: [main]
