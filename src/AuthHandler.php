@@ -77,6 +77,8 @@ class AuthHandler
      * Cache key derived deterministically from credentials + base URL +
      * scopes. Hashed so that a leaked cache key cannot be reversed to
      * recover the client ID.
+     *
+     * @param string[] $scopes
      */
     public static function deriveCacheKey(string $clientId, string $baseUrl, array $scopes): string
     {
