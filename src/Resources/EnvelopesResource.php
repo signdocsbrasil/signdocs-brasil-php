@@ -6,6 +6,7 @@ namespace SignDocsBrasil\Api\Resources;
 
 use SignDocsBrasil\Api\HttpClient;
 use SignDocsBrasil\Api\Models\AddEnvelopeSessionRequest;
+use SignDocsBrasil\Api\Models\CancelEnvelopeResponse;
 use SignDocsBrasil\Api\Models\CreateEnvelopeRequest;
 use SignDocsBrasil\Api\Models\Envelope;
 use SignDocsBrasil\Api\Models\EnvelopeCombinedStampResponse;
@@ -77,6 +78,39 @@ final class EnvelopesResource
         );
 
         return EnvelopeSession::fromArray($data ?? []);
+    }
+
+    /**
+     * Cancel an entire envelope.
+     *
+     * Transitions every non-terminal session and its transaction to CANCELLED
+     * and marks the envelope CANCELLED, killing the pending signing links.
+     * Signatures already collected are preserved — their evidence stays valid
+     * and independently verifiable — and reported as preservedSignedCount.
+     *
+     * Prefer this over cancelling each session individually: it is one call, it
+     * records the cancellation as a single auditable terminal event, and it is
+     * the only way to move the envelope's own status. Cancelling the member
+     * sessions one by one leaves the envelope itself ACTIVE.
+     *
+     * Idempotent: re-cancelling returns 200 with cancelledCount 0 and
+     * alreadyCancelled true.
+     *
+     * POST /v1/envelopes/{envelopeId}/cancel
+     *
+     * @param string|null $reason Free-text reason recorded in the audit trail.
+     *                            Defaults server-side to 'envelope_cancelled'.
+     */
+    public function cancel(string $envelopeId, ?string $reason = null, ?int $timeout = null): CancelEnvelopeResponse
+    {
+        $data = $this->http->request(
+            'POST',
+            "/v1/envelopes/{$envelopeId}/cancel",
+            $reason !== null ? ['reason' => $reason] : [],
+            timeout: $timeout,
+        );
+
+        return CancelEnvelopeResponse::fromArray($data ?? []);
     }
 
     /**

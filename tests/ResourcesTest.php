@@ -98,6 +98,39 @@ final class ResourcesTest extends TestCase
         $docs->download('tx_1');
     }
 
+    public function testCancelEnvelopePostsToTheEnvelopeEndpoint(): void
+    {
+        // Must hit the envelope's own cancel route — cancelling the member
+        // sessions one by one leaves the envelope itself ACTIVE.
+        $http = $this->mockHttp();
+        $http->expects($this->once())
+            ->method('request')
+            ->with('POST', '/v1/envelopes/env_1/cancel', ['reason' => 'owner_cancelled'])
+            ->willReturn([
+                'envelopeId' => 'env_1',
+                'status' => 'CANCELLED',
+                'cancelledCount' => 2,
+                'preservedSignedCount' => 0,
+                'cancelledSessions' => [],
+            ]);
+
+        $envelopes = new \SignDocsBrasil\Api\Resources\EnvelopesResource($http);
+        $resp = $envelopes->cancel('env_1', 'owner_cancelled');
+        $this->assertSame(2, $resp->cancelledCount);
+    }
+
+    public function testCancelEnvelopeWithoutAReasonSendsAnEmptyBody(): void
+    {
+        $http = $this->mockHttp();
+        $http->expects($this->once())
+            ->method('request')
+            ->with('POST', '/v1/envelopes/env_1/cancel', [])
+            ->willReturn(['envelopeId' => 'env_1', 'status' => 'CANCELLED']);
+
+        $envelopes = new \SignDocsBrasil\Api\Resources\EnvelopesResource($http);
+        $envelopes->cancel('env_1');
+    }
+
     public function testHealthCheckNoAuth(): void
     {
         $http = $this->mockHttp();

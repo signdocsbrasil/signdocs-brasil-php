@@ -11,6 +11,7 @@ use SignDocsBrasil\Api\Models\CompleteSigningRequest;
 use SignDocsBrasil\Api\Models\CompleteSigningResponse;
 use SignDocsBrasil\Api\Models\ConfirmDocumentRequest;
 use SignDocsBrasil\Api\Models\CreateTransactionRequest;
+use SignDocsBrasil\Api\Models\CancelEnvelopeResponse;
 use SignDocsBrasil\Api\Models\DownloadResponse;
 use SignDocsBrasil\Api\Models\EnrollUserRequest;
 use SignDocsBrasil\Api\Models\EnrollUserResponse;
@@ -579,6 +580,53 @@ final class ModelsTest extends TestCase
         $this->assertNull($resp->documentFormat);
         $this->assertArrayNotHasKey('signatureUrl', $resp->toArray());
         $this->assertArrayNotHasKey('documentFormat', $resp->toArray());
+    }
+
+    // ── CancelEnvelopeResponse ──────────────────────────────────────
+
+    public function testCancelEnvelopeResponseFromArray(): void
+    {
+        $resp = CancelEnvelopeResponse::fromArray([
+            'envelopeId' => 'env_1',
+            'status' => 'CANCELLED',
+            'cancelledCount' => 2,
+            'preservedSignedCount' => 1,
+            'cancelledSessions' => [
+                ['sessionId' => 'ss_a', 'transactionId' => 'tx_a'],
+                ['sessionId' => 'ss_b', 'transactionId' => 'tx_b'],
+            ],
+        ]);
+
+        $this->assertSame('env_1', $resp->envelopeId);
+        $this->assertSame('CANCELLED', $resp->status);
+        $this->assertSame(2, $resp->cancelledCount);
+        // A signature already collected is never invalidated by cancelling.
+        $this->assertSame(1, $resp->preservedSignedCount);
+        $this->assertCount(2, $resp->cancelledSessions);
+        $this->assertFalse($resp->alreadyCancelled);
+    }
+
+    public function testCancelEnvelopeResponseIdempotentShape(): void
+    {
+        // Re-cancelling returns 200 with nothing left to cancel.
+        $resp = CancelEnvelopeResponse::fromArray([
+            'envelopeId' => 'env_1',
+            'status' => 'CANCELLED',
+            'cancelledCount' => 0,
+            'preservedSignedCount' => 0,
+            'alreadyCancelled' => true,
+        ]);
+
+        $this->assertTrue($resp->alreadyCancelled);
+        $this->assertSame(0, $resp->cancelledCount);
+        $this->assertSame([], $resp->cancelledSessions);
+        $this->assertArrayHasKey('alreadyCancelled', $resp->toArray());
+    }
+
+    public function testCancelEnvelopeResponseOmitsAlreadyCancelledWhenFalse(): void
+    {
+        $resp = CancelEnvelopeResponse::fromArray(['envelopeId' => 'env_1', 'status' => 'CANCELLED']);
+        $this->assertArrayNotHasKey('alreadyCancelled', $resp->toArray());
     }
 
     // ── PrepareSigningRequest ───────────────────────────────────────
