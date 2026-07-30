@@ -535,6 +535,52 @@ final class ModelsTest extends TestCase
         $this->assertSame($data, $resp->toArray());
     }
 
+    public function testDownloadResponseCarriesDetachedSignatureFields(): void
+    {
+        // Non-PDF transaction: the API returns documentFormat 'generic' and a
+        // detached CAdES signature instead of an embedded signedUrl.
+        $resp = DownloadResponse::fromArray([
+            'transactionId' => 'tx_3',
+            'documentHash' => 'sha256-ghi',
+            'documentFormat' => 'generic',
+            'originalUrl' => 'https://s3.example.com/document.docx',
+            'signatureUrl' => 'https://s3.example.com/signature.p7s',
+            'expiresIn' => 3600,
+        ]);
+
+        $this->assertSame('generic', $resp->documentFormat);
+        $this->assertSame('https://s3.example.com/signature.p7s', $resp->signatureUrl);
+        $this->assertNull($resp->signedUrl);
+    }
+
+    public function testDownloadResponseDetachedRoundtrip(): void
+    {
+        $data = [
+            'transactionId' => 'tx_4',
+            'expiresIn' => 7200,
+            'originalUrl' => 'https://cdn.example.com/orig.odt',
+            'signatureUrl' => 'https://cdn.example.com/signature.p7s',
+            'documentFormat' => 'generic',
+        ];
+        $resp = DownloadResponse::fromArray($data);
+        $this->assertSame($data, $resp->toArray());
+    }
+
+    public function testDownloadResponseOmitsAbsentUrls(): void
+    {
+        // A PDF transaction must not grow empty signatureUrl/documentFormat keys.
+        $resp = DownloadResponse::fromArray([
+            'transactionId' => 'tx_5',
+            'signedUrl' => 'https://cdn.example.com/signed.pdf',
+            'expiresIn' => 60,
+        ]);
+
+        $this->assertNull($resp->signatureUrl);
+        $this->assertNull($resp->documentFormat);
+        $this->assertArrayNotHasKey('signatureUrl', $resp->toArray());
+        $this->assertArrayNotHasKey('documentFormat', $resp->toArray());
+    }
+
     // ── PrepareSigningRequest ───────────────────────────────────────
 
     public function testPrepareSigningRequestFromArray(): void
