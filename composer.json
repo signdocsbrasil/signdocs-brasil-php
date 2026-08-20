@@ -1,8 +1,8 @@
 {
     "name": "signdocs-brasil/signdocs-brasil-php",
-    "description": "Official PHP SDK for the SignDocsBrasil API — digital document signing with ICP-Brasil support",
+    "description": "Official PHP SDK for the SignDocsBrasil API \u2014 digital document signing with ICP-Brasil support",
     "type": "library",
-    "version": "1.9.0",
+    "version": "1.10.0",
     "license": "MIT",
     "keywords": [
         "signdocs",
