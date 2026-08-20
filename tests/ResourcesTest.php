@@ -276,11 +276,51 @@ final class ResourcesTest extends TestCase
         $verification->downloads('ev_1');
     }
 
+    public function testEnvelopesAddSessionSendsIdempotencyKey(): void
+    {
+        // addSession went unkeyed while the client retries {429, 500, 503}, so a
+        // 500 became a second signer, a second quota charge and a second
+        // invitation — and this response carries the only copy of clientSecret.
+        $http = $this->mockHttp();
+        $http->expects($this->once())
+            ->method('requestWithIdempotency')
+            ->with(
+                'POST',
+                '/v1/envelopes/env_1/sessions',
+                $this->anything(),
+                'idem-signer-1',
+            )
+            ->willReturn([
+                'sessionId' => 'ss_1',
+                'transactionId' => 'tx_1',
+                'signerIndex' => 1,
+                'status' => 'ACTIVE',
+                'url' => 'https://sign/s/ss_1',
+                'clientSecret' => 'ss_secret_1',
+                'expiresAt' => '2026-09-01T00:00:00.000Z',
+            ]);
+
+        $envelopes = new \SignDocsBrasil\Api\Resources\EnvelopesResource($http);
+        $session = $envelopes->addSession(
+            'env_1',
+            new \SignDocsBrasil\Api\Models\AddEnvelopeSessionRequest(
+                signerIndex: 1,
+                signer: new \SignDocsBrasil\Api\Models\Signer(
+                    name: 'A', userExternalId: 'u1', cpf: '52998224725',
+                ),
+                policy: new \SignDocsBrasil\Api\Models\Policy(profile: 'CLICK_ONLY'),
+            ),
+            'idem-signer-1',
+        );
+
+        $this->assertSame('ss_1', $session->sessionId);
+    }
+
     public function testVerificationVerifyDocumentAuthenticated(): void
     {
         $http = $this->mockHttp();
         $http->expects($this->once())
-            ->method('request')
+            ->method('requestWithIdempotency')
             ->with('POST', '/v1/verify/document', ['content' => 'JVBERi0xLjQK', 'filename' => 'contract.pdf'])
             ->willReturn([
                 'signed' => true,
@@ -315,7 +355,7 @@ final class ResourcesTest extends TestCase
     {
         $http = $this->mockHttp();
         $http->expects($this->once())
-            ->method('request')
+            ->method('requestWithIdempotency')
             ->with('POST', '/v1/verify/document', ['content' => 'JVBERi0xLjQK'])
             ->willReturn([
                 'signed' => false,

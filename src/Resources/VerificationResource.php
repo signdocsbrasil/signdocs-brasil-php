@@ -85,14 +85,20 @@ final class VerificationResource
      *
      * @param VerifyDocumentRequest|array<string, mixed> $request Base64 PDF content (and optional filename)
      */
-    public function verifyDocument(VerifyDocumentRequest|array $request, ?int $timeout = null): VerifyDocumentResponse
-    {
+    public function verifyDocument(
+        VerifyDocumentRequest|array $request,
+        ?string $idempotencyKey = null,
+        ?int $timeout = null,
+    ): VerifyDocumentResponse {
         $body = $request instanceof VerifyDocumentRequest ? $request->toArray() : $request;
 
-        $data = $this->http->request(
+        // Metered, and the answer is a pure function of the PDF — an unkeyed
+        // retry pays the verification quota twice for an identical result.
+        $data = $this->http->requestWithIdempotency(
             'POST',
             '/v1/verify/document',
             $body,
+            idempotencyKey: $idempotencyKey,
             timeout: $timeout,
         );
 

@@ -64,16 +64,29 @@ final class EnvelopesResource
      * Add a signing session to an envelope for a specific signer.
      *
      * POST /v1/envelopes/{envelopeId}/sessions
+     *
+     * An X-Idempotency-Key header is set automatically. The key is minted once
+     * before the client's internal retries, so it stays stable across them —
+     * which matters more here than on most calls: this response carries the
+     * only copy of clientSecret, and an unkeyed retry after a 500 creates a
+     * second signer, charges the quota again and sends a second invitation.
+     *
+     * Pass a distinct key per signer. The API scopes its idempotency cache by
+     * key and resolved path, and every signer on an envelope shares that path,
+     * so one key across the loop returns signer 1's response — and signer 1's
+     * clientSecret — for signer 2.
      */
     public function addSession(
         string $envelopeId,
         AddEnvelopeSessionRequest $request,
+        ?string $idempotencyKey = null,
         ?int $timeout = null,
     ): EnvelopeSession {
-        $data = $this->http->request(
+        $data = $this->http->requestWithIdempotency(
             'POST',
             "/v1/envelopes/{$envelopeId}/sessions",
             body: $request->toArray(),
+            idempotencyKey: $idempotencyKey,
             timeout: $timeout,
         );
 
