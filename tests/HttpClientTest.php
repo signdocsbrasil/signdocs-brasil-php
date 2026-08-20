@@ -82,6 +82,20 @@ final class HttpClientTest extends TestCase
         $this->assertStringContainsString('signdocs-brasil-php/', $req->getHeaderLine('User-Agent'));
     }
 
+    public function testUserAgentVersionMatchesComposerJson(): void
+    {
+        // The User-Agent is how the API attributes traffic to a client version.
+        // 1.10.0 shipped reporting 1.9.0 because nothing compared the constant
+        // against the package — a release that forgets it now fails here.
+        $composer = json_decode(
+            (string) file_get_contents(__DIR__ . '/../composer.json'),
+            true,
+        );
+        $reflected = new \ReflectionClassConstant(HttpClient::class, 'SDK_VERSION');
+
+        $this->assertSame($composer['version'], $reflected->getValue());
+    }
+
     public function testNoAuthSkipsAuthorization(): void
     {
         $mock = new MockHandler([
