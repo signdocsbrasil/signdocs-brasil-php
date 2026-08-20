@@ -276,6 +276,52 @@ final class ResourcesTest extends TestCase
         $verification->downloads('ev_1');
     }
 
+    public function testSigningSessionsLinkPostsWithoutIdempotencyKey(): void
+    {
+        // Minting a link is not a metered create. A key would let a retry
+        // replay a URL that has already been consumed instead of issuing the
+        // fresh one the caller asked for.
+        $http = $this->mockHttp();
+        $http->expects($this->once())
+            ->method('request')
+            ->with('POST', '/v1/signing-sessions/ss_1/link')
+            ->willReturn([
+                'sessionId' => 'ss_1',
+                'transactionId' => 'tx_1',
+                'url' => 'https://sign.signdocs.com.br/s/ss_1?cs=abc',
+                'expiresAt' => '2026-08-27T12:00:00.000Z',
+                'expiresIn' => 3600,
+            ]);
+        $http->expects($this->never())->method('requestWithIdempotency');
+
+        $sessions = new \SignDocsBrasil\Api\Resources\SigningSessionsResource($http);
+        $link = $sessions->link('ss_1');
+
+        $this->assertSame('https://sign.signdocs.com.br/s/ss_1?cs=abc', $link->url);
+        $this->assertSame(3600, $link->expiresIn);
+        $this->assertSame('tx_1', $link->transactionId);
+    }
+
+    public function testSigningSessionsLinkPropagatesConflict(): void
+    {
+        // A completed session cannot be linked — 409 must surface, not become
+        // an unusable link.
+        $http = $this->mockHttp();
+        $http->expects($this->once())
+            ->method('request')
+            ->willThrowException(new ConflictException(new ProblemDetail(
+                type: 'about:blank',
+                title: 'Conflict',
+                status: 409,
+                detail: 'Session cannot be linked in status: COMPLETED',
+            )));
+
+        $sessions = new \SignDocsBrasil\Api\Resources\SigningSessionsResource($http);
+
+        $this->expectException(ConflictException::class);
+        $sessions->link('ss_done');
+    }
+
     public function testEnvelopesAddSessionSendsIdempotencyKey(): void
     {
         // addSession went unkeyed while the client retries {429, 500, 503}, so a

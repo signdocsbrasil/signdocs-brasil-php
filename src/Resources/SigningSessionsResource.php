@@ -9,6 +9,7 @@ use SignDocsBrasil\Api\Models\AdvanceSessionRequest;
 use SignDocsBrasil\Api\Models\AdvanceSessionResponse;
 use SignDocsBrasil\Api\Models\CancelSigningSessionResponse;
 use SignDocsBrasil\Api\Models\CreateSigningSessionRequest;
+use SignDocsBrasil\Api\Models\MintSigningLinkResponse;
 use SignDocsBrasil\Api\Models\ResendOtpRequest;
 use SignDocsBrasil\Api\Models\SigningSession;
 use SignDocsBrasil\Api\Models\SigningSessionBootstrap;
@@ -77,6 +78,44 @@ final class SigningSessionsResource
         );
 
         return CancelSigningSessionResponse::fromArray($data ?? []);
+    }
+
+    /**
+     * Mint a fresh signing URL for an existing session and return it, instead
+     * of e-mailing it.
+     *
+     * POST /v1/signing-sessions/{sessionId}/link
+     *
+     * A signing link is single-use: once the signer finishes — or the embed
+     * token is otherwise consumed — reopening the same URL returns
+     * `401 Embed token has been consumed`. This issues a new one without
+     * creating another transaction and without consuming quota. Works for
+     * standalone and envelope sessions alike.
+     *
+     * `expiresAt` is inherited from the original session and is not extended.
+     *
+     * Authorises the tenant, not the end user. The API cannot tell which of
+     * your users is entitled to this link, so an application whose users share
+     * one tenant must establish that itself before calling — otherwise this
+     * becomes a way for one user to obtain another's signing credential.
+     *
+     * @param string   $sessionId Session identifier. Must be ACTIVE.
+     * @param int|null $timeout   Per-request timeout in milliseconds.
+     *
+     * @throws \SignDocsBrasil\Api\Errors\ConflictException when the session
+     *         is not ACTIVE — a link to a finished session would authenticate
+     *         nothing. Use EnvelopesResource::combinedStamp() or
+     *         TransactionsResource::download() to reach the signed document.
+     */
+    public function link(string $sessionId, ?int $timeout = null): MintSigningLinkResponse
+    {
+        $data = $this->http->request(
+            'POST',
+            "/v1/signing-sessions/{$sessionId}/link",
+            timeout: $timeout,
+        );
+
+        return MintSigningLinkResponse::fromArray($data ?? []);
     }
 
     /**
