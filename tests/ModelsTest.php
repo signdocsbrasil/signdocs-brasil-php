@@ -77,6 +77,42 @@ final class ModelsTest extends TestCase
         $this->assertSame(['LIVENESS', 'OTP'], $policy->customSteps);
     }
 
+    public function testPolicyOmitsUnsetBiometricBars(): void
+    {
+        // Sending 0 would be rejected by the API, so an unset bar must not
+        // appear in the payload at all.
+        $policy = new Policy('BIOMETRIC');
+
+        $this->assertArrayNotHasKey('minSimilarity', $policy->toArray());
+        $this->assertArrayNotHasKey('minLivenessConfidence', $policy->toArray());
+    }
+
+    public function testPolicyCarriesBiometricBars(): void
+    {
+        $policy = Policy::fromArray([
+            'profile' => 'BIOMETRIC',
+            'minSimilarity' => 95,
+            'minLivenessConfidence' => 90,
+        ]);
+
+        $this->assertSame(95.0, $policy->minSimilarity);
+        $this->assertSame(90.0, $policy->minLivenessConfidence);
+        $this->assertSame(
+            ['profile' => 'BIOMETRIC', 'minSimilarity' => 95.0, 'minLivenessConfidence' => 90.0],
+            $policy->toArray(),
+        );
+    }
+
+    public function testPolicyAcceptsFractionalBar(): void
+    {
+        // The API normalises 0.95 and 95 to the same percentage; the SDK must
+        // pass either through untouched rather than guessing.
+        $this->assertSame(0.95, Policy::fromArray([
+            'profile' => 'BIOMETRIC',
+            'minSimilarity' => 0.95,
+        ])->minSimilarity);
+    }
+
     public function testPolicyRoundtrip(): void
     {
         $data = ['profile' => 'BIOMETRIC', 'customSteps' => ['LIVENESS']];
