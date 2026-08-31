@@ -6,6 +6,8 @@ namespace SignDocsBrasil\Api\Tests;
 
 use PHPUnit\Framework\TestCase;
 use SignDocsBrasil\Api\Errors\ProblemDetail;
+use SignDocsBrasil\Api\Models\AdvanceSessionRequest;
+use SignDocsBrasil\Api\Models\AdvanceSessionResponse;
 use SignDocsBrasil\Api\Models\CombinedStampResponse;
 use SignDocsBrasil\Api\Models\CompleteSigningRequest;
 use SignDocsBrasil\Api\Models\CompleteSigningResponse;
@@ -1434,5 +1436,95 @@ final class ModelsTest extends TestCase
         $this->assertSame(['TRANSACTION.COMPLETED', 'TRANSACTION.FAILED'], $resp->events);
         $this->assertSame('ACTIVE', $resp->status);
         $this->assertSame('2024-11-15T00:00:00.000Z', $resp->createdAt);
+    }
+
+    // ── Advance session surface ─────────────────────────────────────
+
+    public function testAdvanceRequestCarriesDocumentPhotoFields(): void
+    {
+        $req = new AdvanceSessionRequest(
+            action: 'complete_document_photo',
+            documentImage: 'AA==',
+            documentType: 'RG',
+            sandboxBrightness: 8.0,
+            sandboxSharpness: 6.0,
+        );
+
+        $this->assertSame([
+            'action' => 'complete_document_photo',
+            'documentImage' => 'AA==',
+            'documentType' => 'RG',
+            'sandboxBrightness' => 8.0,
+            'sandboxSharpness' => 6.0,
+        ], $req->toArray());
+    }
+
+    public function testAdvanceRequestConfirmSignerCarriesCpf(): void
+    {
+        $req = new AdvanceSessionRequest(action: 'confirm_signer', cpfCnpj: '11144477735');
+
+        $this->assertSame(
+            ['action' => 'confirm_signer', 'cpfCnpj' => '11144477735'],
+            $req->toArray(),
+        );
+    }
+
+    public function testAdvanceRequestOmitsUnsetFields(): void
+    {
+        $this->assertSame(
+            ['action' => 'start_liveness'],
+            (new AdvanceSessionRequest(action: 'start_liveness'))->toArray(),
+        );
+    }
+
+    public function testRejectedStepIsReadFromTheBodyNotTheStatus(): void
+    {
+        // A rejected biometric step is HTTP 200 with the session still ACTIVE.
+        // Anything that only branches on the status reads this as success.
+        $res = AdvanceSessionResponse::fromArray([
+            'sessionId' => 'ss_1',
+            'status' => 'ACTIVE',
+            'errorCode' => 'BIOMETRIC_MATCH_FAILED',
+            'errorDetail' => 'Não foi possível confirmar seu rosto. Tente novamente.',
+            'retryable' => true,
+        ]);
+
+        $this->assertSame('ACTIVE', $res->status);
+        $this->assertSame('BIOMETRIC_MATCH_FAILED', $res->errorCode);
+        $this->assertTrue($res->retryable);
+    }
+
+    public function testExhaustedAttemptsAreNotRetryable(): void
+    {
+        $res = AdvanceSessionResponse::fromArray([
+            'sessionId' => 'ss_1',
+            'status' => 'ACTIVE',
+            'errorCode' => 'DOCUMENT_QUALITY_LOW',
+            'retryable' => false,
+        ]);
+
+        $this->assertFalse($res->retryable);
+    }
+
+    public function testAdvanceResponseKeepsFallbackAndSandboxKeys(): void
+    {
+        $res = AdvanceSessionResponse::fromArray([
+            'sessionId' => 'ss_1',
+            'status' => 'ACTIVE',
+            'sandbox' => ['otpCode' => '123456', 'autoPass' => true],
+            'fallback' => ['triggered' => true, 'reason' => 'BIOMETRIC_UNAVAILABLE'],
+        ]);
+
+        $this->assertTrue($res->sandbox['autoPass']);
+        $this->assertTrue($res->fallback['triggered']);
+    }
+
+    public function testAdvanceResponseLeavesAbsentFieldsNull(): void
+    {
+        $res = AdvanceSessionResponse::fromArray(['sessionId' => 'ss_1', 'status' => 'COMPLETED']);
+
+        $this->assertNull($res->errorCode);
+        $this->assertNull($res->retryable);
+        $this->assertNull($res->fallback);
     }
 }

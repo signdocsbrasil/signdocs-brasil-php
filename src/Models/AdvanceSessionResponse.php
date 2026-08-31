@@ -37,6 +37,27 @@ final class AdvanceSessionResponse
         public readonly ?string $hashAlgorithm = null,
         public readonly ?string $signatureAlgorithm = null,
         public readonly ?array $sandbox = null,
+        /**
+         * Why a step was rejected, when the step fails but the *request* does
+         * not. This is the part that matters most in a biometric integration:
+         * a rejected step comes back 200 with the session still ACTIVE and the
+         * reason here, not as an HTTP error — code that only catches
+         * exceptions reads a rejection as success.
+         *
+         * Emitted today: BIOMETRIC_MATCH_FAILED, LIVENESS_NOT_COMPLETED,
+         * DOCUMENT_QUALITY_LOW, DOCUMENT_MATCH_FAILED and the SERPRO_* family.
+         */
+        public readonly ?string $errorCode = null,
+        /** pt-BR text addressed to the signer, ready to display. */
+        public readonly ?string $errorDetail = null,
+        /**
+         * True while the step has attempts left. Once they run out the step
+         * goes FAILED and this is false — the signal that retrying will not
+         * help. Each retry is billed as overage.
+         */
+        public readonly ?bool $retryable = null,
+        /** Set when the policy diverted to an alternative step. */
+        public readonly ?array $fallback = null,
     ) {
     }
 
@@ -60,6 +81,10 @@ final class AdvanceSessionResponse
             hashAlgorithm: isset($data['hashAlgorithm']) ? (string) $data['hashAlgorithm'] : null,
             signatureAlgorithm: isset($data['signatureAlgorithm']) ? (string) $data['signatureAlgorithm'] : null,
             sandbox: $data['sandbox'] ?? null,
+            errorCode: isset($data['errorCode']) ? (string) $data['errorCode'] : null,
+            errorDetail: isset($data['errorDetail']) ? (string) $data['errorDetail'] : null,
+            retryable: isset($data['retryable']) ? (bool) $data['retryable'] : null,
+            fallback: $data['fallback'] ?? null,
         );
     }
 }
