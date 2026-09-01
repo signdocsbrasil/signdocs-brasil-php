@@ -54,24 +54,23 @@ jobs:
     steps:
       - name: Notify Packagist
         run: |
-          # The API-TOKEN header already authenticates — the previous failure
-          # was "Missing payload parameter", not an auth error, so nothing here
-          # needs a username.
-          #
-          # The API needs the repository URL as a JSON *payload*; passing it as
-          # a query parameter returns {"status":"error","message":"Missing
-          # payload parameter"}. That was the previous shape, and because
-          # `curl -s` exits 0 on an API-level error the step reported success
-          # while never notifying anything — releases only reached Packagist
-          # whenever its periodic crawl happened to pick them up.
+          # Packagist wants BOTH credentials as query parameters and the
+          # repository URL as a JSON payload. Neither of the two shapes tried
+          # before worked:
+          #   - URL as a query param            -> "Missing payload parameter"
+          #   - API-TOKEN header, no username   -> "Missing or invalid username/apiToken"
+          # The username is the package maintainer on Packagist (confirmed from
+          # the package's public metadata), not the GitHub org, which is spelled
+          # differently from the Composer vendor.
           response=$(curl -sS -XPOST \
-            -H "API-TOKEN: ${{ secrets.PACKAGIST_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{"repository":{"url":"https://github.com/signdocsbrasil/signdocs-brasil-php"}}' \
-            "https://packagist.org/api/update-package")
+            "https://packagist.org/api/update-package?username=signdocsbrasil&apiToken=${{ secrets.PACKAGIST_TOKEN }}")
           echo "$response"
           # Fail loudly rather than let a broken notification look like a
-          # release: a green step that published nothing is worse than a red one.
+          # release. The previous version used `curl -s` and ignored the body,
+          # so an API-level rejection still exited 0 and the step went green
+          # while notifying nothing — for many releases.
           echo "$response" | grep -q '"status":"success"' || {
             echo "::error::Packagist did not accept the update"
             exit 1
