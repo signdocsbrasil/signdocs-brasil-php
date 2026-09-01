@@ -54,6 +54,10 @@ jobs:
     steps:
       - name: Notify Packagist
         run: |
+          # The API-TOKEN header already authenticates — the previous failure
+          # was "Missing payload parameter", not an auth error, so nothing here
+          # needs a username.
+          #
           # The API needs the repository URL as a JSON *payload*; passing it as
           # a query parameter returns {"status":"error","message":"Missing
           # payload parameter"}. That was the previous shape, and because
@@ -64,7 +68,7 @@ jobs:
             -H "API-TOKEN: ${{ secrets.PACKAGIST_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{"repository":{"url":"https://github.com/signdocsbrasil/signdocs-brasil-php"}}' \
-            "https://packagist.org/api/update-package?username=signdocsbrasil")
+            "https://packagist.org/api/update-package")
           echo "$response"
           # Fail loudly rather than let a broken notification look like a
           # release: a green step that published nothing is worse than a red one.
