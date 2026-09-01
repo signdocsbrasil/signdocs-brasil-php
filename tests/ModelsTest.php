@@ -9,6 +9,7 @@ use SignDocsBrasil\Api\Errors\ProblemDetail;
 use SignDocsBrasil\Api\Models\AdvanceSessionRequest;
 use SignDocsBrasil\Api\Models\DeleteEnrollmentResponse;
 use SignDocsBrasil\Api\Models\EnrollmentStatusResponse;
+use SignDocsBrasil\Api\Models\EnrollUsersBatchResponse;
 use SignDocsBrasil\Api\Models\AdvanceSessionResponse;
 use SignDocsBrasil\Api\Models\CombinedStampResponse;
 use SignDocsBrasil\Api\Models\CompleteSigningRequest;
@@ -1586,5 +1587,42 @@ final class ModelsTest extends TestCase
 
         $this->assertTrue($res->deleted);
         $this->assertSame(3, $res->versionsDeleted);
+    }
+
+    // ── Batch enrollment / dry run ──────────────────────────────────
+
+    public function testDryRunResponseCarriesCounts(): void
+    {
+        $res = EnrollUsersBatchResponse::fromArray([
+            'dryRun' => true,
+            'submitted' => 3,
+            'usable' => 1,
+            'marginal' => 1,
+            'rejected' => 1,
+            'results' => [
+                ['index' => 0, 'status' => 'usable', 'warnings' => []],
+                ['index' => 1, 'status' => 'marginal', 'warnings' => ['LOW_SHARPNESS']],
+                ['index' => 2, 'status' => 'rejected', 'error' => 'No face detected'],
+            ],
+        ]);
+
+        $this->assertTrue($res->dryRun);
+        $this->assertSame([1, 1, 1], [$res->usable, $res->marginal, $res->rejected]);
+        // marginal enrols fine today — it is the row that fails matching later
+        $this->assertSame('marginal', $res->results[1]['status']);
+        $this->assertNull($res->succeeded);
+    }
+
+    public function testRealBatchResponseHasNoDryRunFields(): void
+    {
+        $res = EnrollUsersBatchResponse::fromArray([
+            'submitted' => 2,
+            'succeeded' => 2,
+            'failed' => 0,
+            'results' => [['index' => 0, 'status' => 'enrolled'], ['index' => 1, 'status' => 'enrolled']],
+        ]);
+
+        $this->assertNull($res->dryRun);
+        $this->assertSame(2, $res->succeeded);
     }
 }

@@ -9,6 +9,7 @@ use SignDocsBrasil\Api\Models\EnrollUserRequest;
 use SignDocsBrasil\Api\Models\EnrollUserResponse;
 use SignDocsBrasil\Api\Models\EnrollmentStatusResponse;
 use SignDocsBrasil\Api\Models\DeleteEnrollmentResponse;
+use SignDocsBrasil\Api\Models\EnrollUsersBatchResponse;
 
 final class UsersResource
 {
@@ -72,5 +73,39 @@ final class UsersResource
         );
 
         return DeleteEnrollmentResponse::fromArray($data ?? []);
+    }
+
+    /**
+     * Enrol up to 25 users in one request.
+     *
+     * The documented cap is 25 rows, but the binding limit is the request body —
+     * roughly 6MB, and base64 inflates each photo by a third. Keep photos under
+     * ~175KB (640x640 is ample) to use all 25 slots.
+     *
+     * With $dryRun nothing is persisted: every row is inspected and returned
+     * with quality metrics, no image reaches storage, and the 90-day retention
+     * clock never starts. Rekognition's confidence answers "is this a face?",
+     * not "is this a good reference" — a dark, blurred photo enrols happily at
+     * 99.99 confidence and fails face matching months later.
+     *
+     * POST /v1/users/enrollments
+     *
+     * @param list<array<string, mixed>> $enrollments Rows with userExternalId, image, cpf
+     */
+    public function enrollBatch(array $enrollments, bool $dryRun = false, ?int $timeout = null): EnrollUsersBatchResponse
+    {
+        $body = ['enrollments' => array_values($enrollments)];
+        if ($dryRun) {
+            $body['dryRun'] = true;
+        }
+
+        $data = $this->http->request(
+            'POST',
+            '/v1/users/enrollments',
+            $body,
+            timeout: $timeout,
+        );
+
+        return EnrollUsersBatchResponse::fromArray($data ?? []);
     }
 }
