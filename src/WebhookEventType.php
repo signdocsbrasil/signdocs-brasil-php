@@ -26,6 +26,9 @@ enum WebhookEventType: string
     case StepFailed = 'STEP.FAILED';
     case StepPurposeDisclosureSent = 'STEP.PURPOSE_DISCLOSURE_SENT';
 
+    case EnrollmentExpiring = 'ENROLLMENT.EXPIRING';
+    case EnrollmentExpired = 'ENROLLMENT.EXPIRED';
+
     case QuotaWarning = 'QUOTA.WARNING';
     case ApiDeprecationNotice = 'API.DEPRECATION_NOTICE';
 

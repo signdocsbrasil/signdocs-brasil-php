@@ -25,6 +25,11 @@ final class WebhookEventTypeTest extends TestCase
         'STEP.COMPLETED',
         'STEP.FAILED',
         'STEP.PURPOSE_DISCLOSURE_SENT',
+        // Added when the enrolment-expiry sweep landed in the spec. This
+        // list is a tripwire on purpose: a spec addition should fail here
+        // until someone decides the SDK models it too.
+        'ENROLLMENT.EXPIRING',
+        'ENROLLMENT.EXPIRED',
         'QUOTA.WARNING',
         'API.DEPRECATION_NOTICE',
         'SIGNING_SESSION.CREATED',

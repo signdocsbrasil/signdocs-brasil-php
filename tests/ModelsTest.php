@@ -7,6 +7,8 @@ namespace SignDocsBrasil\Api\Tests;
 use PHPUnit\Framework\TestCase;
 use SignDocsBrasil\Api\Errors\ProblemDetail;
 use SignDocsBrasil\Api\Models\AdvanceSessionRequest;
+use SignDocsBrasil\Api\Models\DeleteEnrollmentResponse;
+use SignDocsBrasil\Api\Models\EnrollmentStatusResponse;
 use SignDocsBrasil\Api\Models\AdvanceSessionResponse;
 use SignDocsBrasil\Api\Models\CombinedStampResponse;
 use SignDocsBrasil\Api\Models\CompleteSigningRequest;
@@ -1526,5 +1528,63 @@ final class ModelsTest extends TestCase
         $this->assertNull($res->errorCode);
         $this->assertNull($res->retryable);
         $this->assertNull($res->fallback);
+    }
+
+    // ── Enrollment lifecycle ────────────────────────────────────────
+
+    public function testEnrollmentStatusReportsExpiryWindow(): void
+    {
+        $res = EnrollmentStatusResponse::fromArray([
+            'userExternalId' => 'emp_001',
+            'enrollmentSource' => 'BANK_PROVIDED',
+            'enrollmentVersion' => 2,
+            'enrollmentHash' => 'abc',
+            'enrolledAt' => '2026-08-31T00:00:00.000Z',
+            'expiresAt' => '2026-11-29T00:00:00.000Z',
+            'expired' => false,
+            'retentionDays' => 90,
+            'maskedCpf' => '***7735',
+        ]);
+
+        $this->assertSame('2026-11-29T00:00:00.000Z', $res->expiresAt);
+        $this->assertFalse($res->expired);
+        $this->assertSame(90, $res->retentionDays);
+        $this->assertSame('***7735', $res->maskedCpf);
+    }
+
+    public function testExpiredEnrolmentIsFlagged(): void
+    {
+        // The whole point of the endpoint: catch it here rather than as a 422
+        // in the middle of a signature.
+        $res = EnrollmentStatusResponse::fromArray([
+            'userExternalId' => 'emp_002',
+            'enrollmentSource' => 'BANK_PROVIDED',
+            'enrollmentVersion' => 1,
+            'enrollmentHash' => 'abc',
+            'enrolledAt' => '2026-01-01T00:00:00.000Z',
+            'expiresAt' => '2026-04-01T00:00:00.000Z',
+            'expired' => true,
+            'retentionDays' => 90,
+        ]);
+
+        $this->assertTrue($res->expired);
+        $this->assertNull($res->maskedCpf);
+    }
+
+    public function testDeleteEnrollmentReportsDestroyedVersions(): void
+    {
+        // Versioned storage: a plain delete would only write a marker and the
+        // image would still be recoverable, so the count matters.
+        $res = DeleteEnrollmentResponse::fromArray([
+            'userExternalId' => 'emp_001',
+            'deleted' => true,
+            'deletedAt' => '2026-08-31T21:00:40.260Z',
+            'enrollmentVersion' => 2,
+            'objectsDeleted' => 1,
+            'versionsDeleted' => 3,
+        ]);
+
+        $this->assertTrue($res->deleted);
+        $this->assertSame(3, $res->versionsDeleted);
     }
 }

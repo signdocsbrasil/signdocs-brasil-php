@@ -33,6 +33,18 @@ final class CreateSigningSessionRequest
         public readonly ?int $expiresInMinutes = null,
         public readonly ?array $appearance = null,
         public readonly ?Owner $owner = null,
+        /**
+         * Biometric reference image for this session, base64 JPEG, max 5MB,
+         * shaped as ['content' => '<base64>'].
+         *
+         * Decides which face the BIOMETRIC_MATCH step compares the captured
+         * liveness against. When set, it takes precedence over the user's
+         * stored enrolment — which is what lets a session be signed by someone
+         * who was never enrolled.
+         *
+         * @var array<string, mixed>|null
+         */
+        public readonly ?array $referenceImage = null,
     ) {
     }
 
@@ -54,6 +66,7 @@ final class CreateSigningSessionRequest
             expiresInMinutes: isset($data['expiresInMinutes']) ? (int) $data['expiresInMinutes'] : null,
             appearance: $data['appearance'] ?? null,
             owner: isset($data['owner']) && is_array($data['owner']) ? Owner::fromArray($data['owner']) : null,
+            referenceImage: $data['referenceImage'] ?? null,
         );
     }
 
@@ -97,6 +110,9 @@ final class CreateSigningSessionRequest
             if ($ownerArr !== []) {
                 $result['owner'] = $ownerArr;
             }
+        }
+        if ($this->referenceImage !== null) {
+            $result['referenceImage'] = $this->referenceImage;
         }
 
         return $result;
