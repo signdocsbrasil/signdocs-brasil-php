@@ -44,6 +44,15 @@ final class EnrollUserResponse
          * @var list<string>|null
          */
         public readonly ?array $warnings = null,
+        /**
+         * Whether the photo works as a reference: usable | marginal | rejected.
+         * Read this rather than deriving it from $warnings.
+         *
+         * Deliberately not a "status": on a batch row status says what happened
+         * to the write, a different question. A poor photo that stored fine is
+         * status=enrolled with referenceQuality=marginal.
+         */
+        public readonly ?string $referenceQuality = null,
     ) {
     }
 
@@ -66,6 +75,7 @@ final class EnrollUserResponse
             pose: $data['pose'] ?? null,
             faceCoverage: isset($data['faceCoverage']) ? (float) $data['faceCoverage'] : null,
             warnings: isset($data['warnings']) ? array_values((array) $data['warnings']) : null,
+            referenceQuality: isset($data['referenceQuality']) ? (string) $data['referenceQuality'] : null,
         );
     }
 
@@ -86,6 +96,7 @@ final class EnrollUserResponse
             ...($this->pose !== null ? ['pose' => $this->pose] : []),
             ...($this->faceCoverage !== null ? ['faceCoverage' => $this->faceCoverage] : []),
             ...($this->warnings !== null ? ['warnings' => $this->warnings] : []),
+            ...($this->referenceQuality !== null ? ['referenceQuality' => $this->referenceQuality] : []),
         ];
 
         if ($this->documentImageHash !== null) {

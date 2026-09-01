@@ -1675,4 +1675,36 @@ final class ModelsTest extends TestCase
         $this->assertArrayNotHasKey('dryRun', $plain->toArray());
         $this->assertTrue($dry->toArray()['dryRun']);
     }
+
+    // ── referenceQuality ────────────────────────────────────────────
+
+    public function testRealEnrolmentStatesTheVerdict(): void
+    {
+        $res = EnrollUserResponse::fromArray([
+            'userExternalId' => 'a',
+            'enrollmentHash' => 'h',
+            'enrollmentVersion' => 1,
+            'enrollmentSource' => 'BANK_PROVIDED',
+            'enrolledAt' => 'x',
+            'cpf' => '11144477735',
+            'faceConfidence' => 99.99,
+            'warnings' => ['LOW_BRIGHTNESS'],
+            'referenceQuality' => 'marginal',
+        ]);
+
+        // Stated, not derived from count($warnings).
+        $this->assertSame('marginal', $res->referenceQuality);
+        $this->assertSame('marginal', $res->toArray()['referenceQuality']);
+    }
+
+    public function testDryRunCarriesTheSameField(): void
+    {
+        $res = InspectEnrollmentResponse::fromArray([
+            'status' => 'usable',
+            'warnings' => [],
+            'referenceQuality' => 'usable',
+        ]);
+
+        $this->assertSame('usable', $res->referenceQuality);
+    }
 }

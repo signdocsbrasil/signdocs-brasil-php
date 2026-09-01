@@ -28,6 +28,8 @@ final class InspectEnrollmentResponse
         public readonly ?array $quality = null,
         public readonly ?array $pose = null,
         public readonly ?float $faceCoverage = null,
+        /** Same field a real enrolment returns. In a dry run it equals $status. */
+        public readonly ?string $referenceQuality = null,
     ) {
     }
 
@@ -46,6 +48,7 @@ final class InspectEnrollmentResponse
             quality: $data['quality'] ?? null,
             pose: $data['pose'] ?? null,
             faceCoverage: isset($data['faceCoverage']) ? (float) $data['faceCoverage'] : null,
+            referenceQuality: isset($data['referenceQuality']) ? (string) $data['referenceQuality'] : null,
         );
     }
 }

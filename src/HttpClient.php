@@ -19,7 +19,7 @@ use SignDocsBrasil\Api\Errors\TimeoutException;
  */
 class HttpClient
 {
-    private const SDK_VERSION = '1.14.0';
+    private const SDK_VERSION = '1.15.0';
 
     private readonly GuzzleClient $guzzle;
     private readonly RetryHandler $retry;
