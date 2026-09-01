@@ -54,6 +54,21 @@ jobs:
     steps:
       - name: Notify Packagist
         run: |
-          curl -s -XPOST \
+          # The API needs the repository URL as a JSON *payload*; passing it as
+          # a query parameter returns {"status":"error","message":"Missing
+          # payload parameter"}. That was the previous shape, and because
+          # `curl -s` exits 0 on an API-level error the step reported success
+          # while never notifying anything — releases only reached Packagist
+          # whenever its periodic crawl happened to pick them up.
+          response=$(curl -sS -XPOST \
             -H "API-TOKEN: ${{ secrets.PACKAGIST_TOKEN }}" \
-            "https://packagist.org/api/update-package?url=https://github.com/signdocsbrasil/signdocs-brasil-php"
+            -H "Content-Type: application/json" \
+            -d '{"repository":{"url":"https://github.com/signdocsbrasil/signdocs-brasil-php"}}' \
+            "https://packagist.org/api/update-package?username=signdocsbrasil")
+          echo "$response"
+          # Fail loudly rather than let a broken notification look like a
+          # release: a green step that published nothing is worse than a red one.
+          echo "$response" | grep -q '"status":"success"' || {
+            echo "::error::Packagist did not accept the update"
+            exit 1
+          }
