@@ -21,6 +21,11 @@ final class AdvanceSessionResponse
      * @param string|null                  $hashAlgorithm
      * @param string|null                  $signatureAlgorithm
      * @param array<string, mixed>|null    $sandbox
+     * @param string|null                  $errorCode    Why a step was rejected while the request itself
+     *                                                   succeeded — see the property for why this matters
+     * @param string|null                  $errorDetail  pt-BR text addressed to the signer
+     * @param bool|null                    $retryable    True while the step has attempts left
+     * @param array<string, mixed>|null    $fallback     Set when the policy diverted to another step
      */
     public function __construct(
         public readonly string $sessionId,
