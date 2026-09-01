@@ -15,6 +15,12 @@ final class EnrollUserRequest
         public readonly string $image,
         public readonly string $cpf,
         public readonly string $source = 'BANK_PROVIDED',
+        /**
+         * Inspect without writing. Returns the same verdict the batch endpoint
+         * gives and persists nothing — no image, no record, and the 90-day
+         * retention clock never starts.
+         */
+        public readonly bool $dryRun = false,
     ) {
     }
 
@@ -35,10 +41,16 @@ final class EnrollUserRequest
      */
     public function toArray(): array
     {
-        return [
+        $result = [
             'image' => $this->image,
             'cpf' => $this->cpf,
             'source' => $this->source,
         ];
+
+        if ($this->dryRun) {
+            $result['dryRun'] = true;
+        }
+
+        return $result;
     }
 }

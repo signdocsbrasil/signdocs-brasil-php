@@ -10,6 +10,7 @@ use SignDocsBrasil\Api\Models\AdvanceSessionRequest;
 use SignDocsBrasil\Api\Models\DeleteEnrollmentResponse;
 use SignDocsBrasil\Api\Models\EnrollmentStatusResponse;
 use SignDocsBrasil\Api\Models\EnrollUsersBatchResponse;
+use SignDocsBrasil\Api\Models\InspectEnrollmentResponse;
 use SignDocsBrasil\Api\Models\AdvanceSessionResponse;
 use SignDocsBrasil\Api\Models\CombinedStampResponse;
 use SignDocsBrasil\Api\Models\CompleteSigningRequest;
@@ -1624,5 +1625,54 @@ final class ModelsTest extends TestCase
 
         $this->assertNull($res->dryRun);
         $this->assertSame(2, $res->succeeded);
+    }
+
+    // ── Quality feedback on enrolment ───────────────────────────────
+
+    public function testSuccessfulEnrolmentStillReportsWarnings(): void
+    {
+        // Detection confidence is ~100 on a photo that makes a poor reference.
+        $res = EnrollUserResponse::fromArray([
+            'userExternalId' => 'matricula-4471',
+            'enrollmentHash' => 'h',
+            'enrollmentVersion' => 1,
+            'enrollmentSource' => 'BANK_PROVIDED',
+            'enrolledAt' => '2026-09-01T00:00:00.000Z',
+            'cpf' => '11144477735',
+            'faceConfidence' => 99.99,
+            'quality' => ['brightness' => 15, 'sharpness' => 13],
+            'faceCoverage' => 0.4222,
+            'warnings' => ['LOW_BRIGHTNESS', 'LOW_SHARPNESS'],
+        ]);
+
+        $this->assertSame(99.99, $res->faceConfidence);
+        $this->assertSame(15, $res->quality['brightness']);
+        $this->assertSame(0.4222, $res->faceCoverage);
+        $this->assertSame(['LOW_BRIGHTNESS', 'LOW_SHARPNESS'], $res->warnings);
+    }
+
+    public function testDryRunVerdict(): void
+    {
+        $res = InspectEnrollmentResponse::fromArray([
+            'dryRun' => true,
+            'userExternalId' => 'a',
+            'status' => 'marginal',
+            'faceConfidence' => 99.99,
+            'quality' => ['brightness' => 15, 'sharpness' => 13],
+            'warnings' => ['LOW_BRIGHTNESS'],
+        ]);
+
+        $this->assertTrue($res->dryRun);
+        $this->assertSame('marginal', $res->status);
+        $this->assertSame(['LOW_BRIGHTNESS'], $res->warnings);
+    }
+
+    public function testEnrollRequestCarriesDryRunOnlyWhenSet(): void
+    {
+        $plain = new \SignDocsBrasil\Api\Models\EnrollUserRequest('aW1n', '11144477735');
+        $dry = new \SignDocsBrasil\Api\Models\EnrollUserRequest('aW1n', '11144477735', 'BANK_PROVIDED', true);
+
+        $this->assertArrayNotHasKey('dryRun', $plain->toArray());
+        $this->assertTrue($dry->toArray()['dryRun']);
     }
 }

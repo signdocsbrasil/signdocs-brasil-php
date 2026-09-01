@@ -10,6 +10,7 @@ use SignDocsBrasil\Api\Models\EnrollUserResponse;
 use SignDocsBrasil\Api\Models\EnrollmentStatusResponse;
 use SignDocsBrasil\Api\Models\DeleteEnrollmentResponse;
 use SignDocsBrasil\Api\Models\EnrollUsersBatchResponse;
+use SignDocsBrasil\Api\Models\InspectEnrollmentResponse;
 
 final class UsersResource
 {
@@ -107,5 +108,29 @@ final class UsersResource
         );
 
         return EnrollUsersBatchResponse::fromArray($data ?? []);
+    }
+
+    /**
+     * Inspect one candidate photo without storing it.
+     *
+     * Same verdict the batch endpoint returns, from the same code — a photo
+     * must not be judged differently depending on which endpoint you asked.
+     * Nothing is persisted and the 90-day retention clock never starts.
+     *
+     * PUT /v1/users/{userExternalId}/enrollment  (dryRun)
+     */
+    public function inspect(string $userExternalId, EnrollUserRequest $request, ?int $timeout = null): InspectEnrollmentResponse
+    {
+        $body = $request->toArray();
+        $body['dryRun'] = true;
+
+        $data = $this->http->request(
+            'PUT',
+            "/v1/users/{$userExternalId}/enrollment",
+            $body,
+            timeout: $timeout,
+        );
+
+        return InspectEnrollmentResponse::fromArray($data ?? []);
     }
 }

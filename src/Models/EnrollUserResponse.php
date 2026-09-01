@@ -27,6 +27,23 @@ final class EnrollUserResponse
         public readonly float $faceConfidence,
         public readonly ?string $documentImageHash = null,
         public readonly ?float $extractionConfidence = null,
+        /**
+         * @var array<string, mixed>|null Capture metrics for the stored reference
+         */
+        public readonly ?array $quality = null,
+        /** @var array<string, mixed>|null */
+        public readonly ?array $pose = null,
+        public readonly ?float $faceCoverage = null,
+        /**
+         * Quality advisories, present on a *successful* enrolment too — the
+         * photo is stored either way, and knowing it is weak now beats finding
+         * out from a failed signature months later. Read these alongside
+         * $faceConfidence, which answers "is this a face?" and not "is this a
+         * good reference": a dark, blurred photo scores 99.99 there.
+         *
+         * @var list<string>|null
+         */
+        public readonly ?array $warnings = null,
     ) {
     }
 
@@ -45,6 +62,10 @@ final class EnrollUserResponse
             faceConfidence: (float) ($data['faceConfidence'] ?? 0.0),
             documentImageHash: isset($data['documentImageHash']) ? (string) $data['documentImageHash'] : null,
             extractionConfidence: isset($data['extractionConfidence']) ? (float) $data['extractionConfidence'] : null,
+            quality: $data['quality'] ?? null,
+            pose: $data['pose'] ?? null,
+            faceCoverage: isset($data['faceCoverage']) ? (float) $data['faceCoverage'] : null,
+            warnings: isset($data['warnings']) ? array_values((array) $data['warnings']) : null,
         );
     }
 
@@ -61,6 +82,10 @@ final class EnrollUserResponse
             'enrolledAt' => $this->enrolledAt,
             'cpf' => $this->cpf,
             'faceConfidence' => $this->faceConfidence,
+            ...($this->quality !== null ? ['quality' => $this->quality] : []),
+            ...($this->pose !== null ? ['pose' => $this->pose] : []),
+            ...($this->faceCoverage !== null ? ['faceCoverage' => $this->faceCoverage] : []),
+            ...($this->warnings !== null ? ['warnings' => $this->warnings] : []),
         ];
 
         if ($this->documentImageHash !== null) {
