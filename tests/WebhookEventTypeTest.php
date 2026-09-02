@@ -21,9 +21,6 @@ final class WebhookEventTypeTest extends TestCase
         'TRANSACTION.EXPIRED',
         'TRANSACTION.FALLBACK',
         'TRANSACTION.DEADLINE_APPROACHING',
-        'STEP.STARTED',
-        'STEP.COMPLETED',
-        'STEP.FAILED',
         'STEP.PURPOSE_DISCLOSURE_SENT',
         // Added when the enrolment-expiry sweep landed in the spec. This
         // list is a tripwire on purpose: a spec addition should fail here
@@ -38,6 +35,7 @@ final class WebhookEventTypeTest extends TestCase
         'SIGNING_SESSION.EXPIRED',
         'ENVELOPE.CREATED',
         'ENVELOPE.ALL_SIGNED',
+        'ENVELOPE.CANCELLED',
         'ENVELOPE.EXPIRED',
     ];
 
@@ -87,7 +85,7 @@ final class WebhookEventTypeTest extends TestCase
         $this->assertTrue(WebhookEventType::StepPurposeDisclosureSent->isNt65());
 
         $this->assertFalse(WebhookEventType::TransactionCompleted->isNt65());
-        $this->assertFalse(WebhookEventType::StepCompleted->isNt65());
+        $this->assertFalse(WebhookEventType::SigningSessionCompleted->isNt65());
         $this->assertFalse(WebhookEventType::QuotaWarning->isNt65());
     }
 

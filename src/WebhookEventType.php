@@ -21,9 +21,6 @@ enum WebhookEventType: string
     case TransactionFallback = 'TRANSACTION.FALLBACK';
     case TransactionDeadlineApproaching = 'TRANSACTION.DEADLINE_APPROACHING';
 
-    case StepStarted = 'STEP.STARTED';
-    case StepCompleted = 'STEP.COMPLETED';
-    case StepFailed = 'STEP.FAILED';
     case StepPurposeDisclosureSent = 'STEP.PURPOSE_DISCLOSURE_SENT';
 
     case EnrollmentExpiring = 'ENROLLMENT.EXPIRING';
@@ -39,6 +36,7 @@ enum WebhookEventType: string
 
     case EnvelopeCreated = 'ENVELOPE.CREATED';
     case EnvelopeAllSigned = 'ENVELOPE.ALL_SIGNED';
+    case EnvelopeCancelled = 'ENVELOPE.CANCELLED';
     case EnvelopeExpired = 'ENVELOPE.EXPIRED';
 
     /**
