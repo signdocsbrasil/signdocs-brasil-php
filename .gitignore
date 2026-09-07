@@ -3,3 +3,11 @@ composer.lock
 .phpunit.cache/
 .phpstan-cache/
 coverage/
+
+# Local agent/assistant config - never committed, never shipped
+.claude/
+CLAUDE.md
+AGENTS.md
+.cursor/
+.windsurf/
+.aider*
