@@ -1171,7 +1171,7 @@ final class ModelsTest extends TestCase
 
         $this->assertSame('base64imagedata', $req->image);
         $this->assertSame('12345678901', $req->cpf);
-        $this->assertSame('BANK_PROVIDED', $req->source);
+        $this->assertSame('ORGANIZATION_PROVIDED', $req->source);
     }
 
     public function testEnrollUserRequestWithSource(): void

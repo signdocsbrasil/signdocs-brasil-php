@@ -9,12 +9,14 @@ final class EnrollUserRequest
     /**
      * @param string $image  Base64-encoded JPEG reference image
      * @param string $cpf    CPF number (11 digits)
-     * @param string $source Image source (BANK_PROVIDED, FIRST_LIVENESS, DOCUMENT_PHOTO)
+     * @param string $source Image source (ORGANIZATION_PROVIDED, FIRST_LIVENESS,
+     *                       DOCUMENT_PHOTO). BANK_PROVIDED is the former name of
+     *                       ORGANIZATION_PROVIDED and is still accepted.
      */
     public function __construct(
         public readonly string $image,
         public readonly string $cpf,
-        public readonly string $source = 'BANK_PROVIDED',
+        public readonly string $source = 'ORGANIZATION_PROVIDED',
         /**
          * Inspect without writing. Returns the same verdict the batch endpoint
          * gives and persists nothing — no image, no record, and the 90-day
@@ -32,7 +34,7 @@ final class EnrollUserRequest
         return new self(
             image: (string) ($data['image'] ?? ''),
             cpf: (string) ($data['cpf'] ?? ''),
-            source: (string) ($data['source'] ?? 'BANK_PROVIDED'),
+            source: (string) ($data['source'] ?? 'ORGANIZATION_PROVIDED'),
         );
     }
 
