@@ -15,6 +15,8 @@ final class EnvelopeSession
      * @param string    $clientSecret  Session secret for the widget/redirect flow.
      * @param string    $expiresAt     ISO 8601 expiration timestamp (UTC).
      * @param bool|null $inviteSent    True when SignDocs dispatched an invitation email to the signer at the time this session was added. Populated only when the envelope was created with an `owner` and the signer's email differs from the owner's (case-insensitive).
+     * @param bool|null $whatsappInviteSent True when Meta accepted the WhatsApp message carrying the link (accepted, not delivered). Null otherwise.
+     * @param bool|null $telegramInviteSent Result of the Telegram delivery, set whenever `deliverVia` included `telegram`. False means the link did not reach the signer over Telegram (no CPF registered with the bot, or the send failed).
      */
     public function __construct(
         public readonly string $sessionId,
@@ -25,6 +27,8 @@ final class EnvelopeSession
         public readonly string $clientSecret,
         public readonly string $expiresAt,
         public readonly ?bool $inviteSent = null,
+        public readonly ?bool $whatsappInviteSent = null,
+        public readonly ?bool $telegramInviteSent = null,
     ) {
     }
 
@@ -42,6 +46,8 @@ final class EnvelopeSession
             clientSecret: (string) ($data['clientSecret'] ?? ''),
             expiresAt: (string) ($data['expiresAt'] ?? ''),
             inviteSent: isset($data['inviteSent']) ? (bool) $data['inviteSent'] : null,
+            whatsappInviteSent: isset($data['whatsappInviteSent']) ? (bool) $data['whatsappInviteSent'] : null,
+            telegramInviteSent: isset($data['telegramInviteSent']) ? (bool) $data['telegramInviteSent'] : null,
         );
     }
 
@@ -62,6 +68,12 @@ final class EnvelopeSession
 
         if ($this->inviteSent !== null) {
             $result['inviteSent'] = $this->inviteSent;
+        }
+        if ($this->whatsappInviteSent !== null) {
+            $result['whatsappInviteSent'] = $this->whatsappInviteSent;
+        }
+        if ($this->telegramInviteSent !== null) {
+            $result['telegramInviteSent'] = $this->telegramInviteSent;
         }
 
         return $result;

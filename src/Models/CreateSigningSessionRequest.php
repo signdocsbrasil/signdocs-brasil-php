@@ -19,6 +19,7 @@ final class CreateSigningSessionRequest
      * @param int|null                   $expiresInMinutes Custom expiration time in minutes (5–1440).
      * @param array<string, mixed>|null  $appearance       Branding configuration for the signing page.
      * @param Owner|null                 $owner            Identity of the requester (see {@see Owner}); enables auto-invite emails and completion notifications.
+     * @param list<string>|null          $deliverVia       Channels that deliver the signing link to this signer: email, whatsapp and/or telegram. Null keeps the previous behavior (the invite email only). WhatsApp and Telegram are enabled on request; whatsapp requires signer phone in E.164, telegram requires signer cpf. Each WhatsApp or Telegram send consumes the tenant's message quota (429 once it runs out).
      */
     public function __construct(
         public readonly string $purpose,
@@ -45,6 +46,7 @@ final class CreateSigningSessionRequest
          * @var array<string, mixed>|null
          */
         public readonly ?array $referenceImage = null,
+        public readonly ?array $deliverVia = null,
     ) {
     }
 
@@ -67,6 +69,7 @@ final class CreateSigningSessionRequest
             appearance: $data['appearance'] ?? null,
             owner: isset($data['owner']) && is_array($data['owner']) ? Owner::fromArray($data['owner']) : null,
             referenceImage: $data['referenceImage'] ?? null,
+            deliverVia: $data['deliverVia'] ?? null,
         );
     }
 
@@ -113,6 +116,9 @@ final class CreateSigningSessionRequest
         }
         if ($this->referenceImage !== null) {
             $result['referenceImage'] = $this->referenceImage;
+        }
+        if ($this->deliverVia !== null) {
+            $result['deliverVia'] = $this->deliverVia;
         }
 
         return $result;

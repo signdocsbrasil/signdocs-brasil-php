@@ -8,7 +8,7 @@ final class StartStepRequest
 {
     /**
      * @param string|null $captureMode Capture mode (BANK_APP or HOSTED_PAGE)
-     * @param string|null $otpChannel  OTP delivery channel (email or sms)
+     * @param string|null $otpChannel  OTP delivery channel (email, sms, whatsapp or telegram)
      */
     public function __construct(
         public readonly ?string $captureMode = null,

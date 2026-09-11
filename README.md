@@ -99,6 +99,29 @@ $session2 = $client->envelopes->addSession($envelope->envelopeId, new AddEnvelop
 echo $session1->url . ' ' . $session2->url;
 ```
 
+## Canais de entrega
+
+A SignDocs entrega o link por e-mail, WhatsApp ou Telegram — escolha por signatário em `deliverVia`. WhatsApp e Telegram são habilitados sob demanda; fale com o time comercial. WhatsApp exige `signer.phone` em E.164; Telegram exige `signer.cpf` e só alcança quem já registrou o CPF no bot da SignDocs. O OTP pode ir por `email`, `sms`, `whatsapp` ou `telegram` (`otpChannel`), independentemente do canal do link. Cada envio por WhatsApp ou Telegram consome a cota de mensagens do tenant; esgotada, a API responde 429.
+
+```php
+use SignDocsBrasil\Api\Models\CreateSigningSessionRequest;
+
+$session = $client->signingSessions->create(new CreateSigningSessionRequest(
+    purpose: 'DOCUMENT_SIGNATURE',
+    policy: new Policy(profile: 'CLICK_ONLY'),
+    signer: new Signer(
+        name: 'João Silva',
+        userExternalId: 'user-001',
+        phone: '+5511999998888',
+        cpf: '12345678901',
+    ),
+    document: ['content' => $pdfBase64, 'filename' => 'contrato.pdf'],
+    deliverVia: ['whatsapp'],
+));
+
+var_dump($session->whatsappInviteSent); // true quando a Meta aceitou a mensagem
+```
+
 ## Configuração Avançada
 
 ### Guzzle Client customizado

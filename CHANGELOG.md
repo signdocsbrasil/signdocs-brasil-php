@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `?array $deliverVia` constructor parameter on `CreateSigningSessionRequest`
+  and `AddEnvelopeSessionRequest` (also surfaced via `toArray()` /
+  `fromArray()`): the channels SignDocs uses to deliver the signing link to
+  that signer, `email`, `whatsapp` and/or `telegram`. Leave it `null` and
+  nothing changes: the invite email only, as before. WhatsApp and Telegram are
+  enabled per tenant on request; `whatsapp` requires `signer.phone` in E.164
+  and `telegram` requires `signer.cpf`. Each WhatsApp or Telegram send consumes
+  the tenant's message quota; once it runs out the API responds 429.
+- `whatsappInviteSent` and `telegramInviteSent` (`?bool`) on `SigningSession`
+  and `EnvelopeSession`, next to `inviteSent`. `whatsappInviteSent` is `true`
+  only when Meta accepted the message (accepted, not delivered) and `null`
+  otherwise; `telegramInviteSent` is set whenever `telegram` was requested,
+  `false` when the link did not reach the signer.
+
+### Changed
+
+- The OTP channel docblocks on `StartStepRequest`, `AdvanceSessionRequest` and
+  `ResendOtpRequest` now list all four channels the API accepts: `email`,
+  `sms`, `whatsapp` and `telegram`.
+  - **Heads-up:** `availableOtpChannels` in the `SigningSessionBootstrap`
+    signer array can carry `whatsapp` or `telegram`. A `match` over it without
+    a `default` arm throws `UnhandledMatchError` on them.
+
 ## [2.0.1] - 2026-09-07
 
 ### Changed

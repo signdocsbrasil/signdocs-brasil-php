@@ -14,7 +14,7 @@ final class AdvanceSessionRequest
      * @param string|null                  $signatureRequestId  Signature request ID (required for complete_signing)
      * @param string|null                  $rawSignatureBase64  Raw signature in base64 (required for complete_signing)
      * @param array<string, mixed>|null    $geolocation         Geolocation data
-     * @param string|null                  $otpChannel          OTP delivery channel (sms, email, whatsapp)
+     * @param string|null                  $otpChannel          OTP delivery channel (sms, email, whatsapp, telegram)
      * @param string|null                  $cpfCnpj             CPF/CNPJ the signer types to confirm identity (confirm_signer)
      * @param string|null                  $documentImage       Base64 identity-document photo, max 5MB (complete_document_photo)
      * @param string|null                  $documentType        Type of the document sent in $documentImage

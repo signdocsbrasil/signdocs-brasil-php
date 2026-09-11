@@ -14,6 +14,7 @@ final class AddEnvelopeSessionRequest
      * @param string|null                $returnUrl   Return URL after completion of this session (overrides envelope-level URL).
      * @param string|null                $cancelUrl   Cancel URL (overrides envelope-level URL).
      * @param array<string, string>|null $metadata    Session-specific metadata.
+     * @param list<string>|null          $deliverVia  Channels that deliver the signing link to this signer: email, whatsapp and/or telegram. Null keeps the previous behavior (the invite email only). In a SEQUENTIAL envelope a later signer receives the link over these channels when their turn comes. Same rules as {@see CreateSigningSessionRequest::$deliverVia}.
      */
     public function __construct(
         public readonly Signer $signer,
@@ -23,6 +24,7 @@ final class AddEnvelopeSessionRequest
         public readonly ?string $returnUrl = null,
         public readonly ?string $cancelUrl = null,
         public readonly ?array $metadata = null,
+        public readonly ?array $deliverVia = null,
     ) {
     }
 
@@ -39,6 +41,7 @@ final class AddEnvelopeSessionRequest
             returnUrl: isset($data['returnUrl']) ? (string) $data['returnUrl'] : null,
             cancelUrl: isset($data['cancelUrl']) ? (string) $data['cancelUrl'] : null,
             metadata: $data['metadata'] ?? null,
+            deliverVia: $data['deliverVia'] ?? null,
         );
     }
 
@@ -64,6 +67,9 @@ final class AddEnvelopeSessionRequest
         }
         if ($this->metadata !== null) {
             $result['metadata'] = $this->metadata;
+        }
+        if ($this->deliverVia !== null) {
+            $result['deliverVia'] = $this->deliverVia;
         }
 
         return $result;

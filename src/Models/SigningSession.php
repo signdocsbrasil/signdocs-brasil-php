@@ -15,6 +15,8 @@ final class SigningSession
      * @param string      $expiresAt     ISO 8601 expiration timestamp (UTC).
      * @param string      $createdAt     ISO 8601 creation timestamp (UTC).
      * @param bool|null   $inviteSent    True when SignDocs dispatched an invitation email to `signer.email` at session creation. Populated only when `owner` was provided and `signer.email` differs from `owner.email` (case-insensitive).
+     * @param bool|null   $whatsappInviteSent True when Meta accepted the WhatsApp message carrying the link (accepted, not delivered). Null otherwise.
+     * @param bool|null   $telegramInviteSent Result of the Telegram delivery, set whenever `deliverVia` included `telegram`. False means the link did not reach the signer over Telegram (no CPF registered with the bot, or the send failed).
      */
     public function __construct(
         public readonly string $sessionId,
@@ -25,6 +27,8 @@ final class SigningSession
         public readonly string $expiresAt,
         public readonly string $createdAt,
         public readonly ?bool $inviteSent = null,
+        public readonly ?bool $whatsappInviteSent = null,
+        public readonly ?bool $telegramInviteSent = null,
     ) {
     }
 
@@ -42,6 +46,8 @@ final class SigningSession
             expiresAt: (string) ($data['expiresAt'] ?? ''),
             createdAt: (string) ($data['createdAt'] ?? ''),
             inviteSent: isset($data['inviteSent']) ? (bool) $data['inviteSent'] : null,
+            whatsappInviteSent: isset($data['whatsappInviteSent']) ? (bool) $data['whatsappInviteSent'] : null,
+            telegramInviteSent: isset($data['telegramInviteSent']) ? (bool) $data['telegramInviteSent'] : null,
         );
     }
 
@@ -62,6 +68,12 @@ final class SigningSession
 
         if ($this->inviteSent !== null) {
             $result['inviteSent'] = $this->inviteSent;
+        }
+        if ($this->whatsappInviteSent !== null) {
+            $result['whatsappInviteSent'] = $this->whatsappInviteSent;
+        }
+        if ($this->telegramInviteSent !== null) {
+            $result['telegramInviteSent'] = $this->telegramInviteSent;
         }
 
         return $result;

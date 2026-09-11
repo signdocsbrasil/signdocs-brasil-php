@@ -7,7 +7,7 @@ namespace SignDocsBrasil\Api\Models;
 final class ResendOtpRequest
 {
     /**
-     * @param string|null $channel OTP delivery channel (sms, email, whatsapp)
+     * @param string|null $channel OTP delivery channel (sms, email, whatsapp, telegram)
      */
     public function __construct(
         public readonly ?string $channel = null,
