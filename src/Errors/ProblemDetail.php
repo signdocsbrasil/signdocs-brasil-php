@@ -46,6 +46,25 @@ final class ProblemDetail
     }
 
     /**
+     * Stable machine-readable case, when the API gives one
+     * (e.g. TIMESTAMP_UNAVAILABLE, SIGNER_TURN).
+     */
+    public function errorCode(): ?string
+    {
+        $code = $this->extensions['code'] ?? null;
+
+        return is_string($code) ? $code : null;
+    }
+
+    /**
+     * True when the API states that resending the same request is safe.
+     */
+    public function isRetryable(): bool
+    {
+        return ($this->extensions['retryable'] ?? null) === true;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(): array

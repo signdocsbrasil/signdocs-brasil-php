@@ -31,6 +31,21 @@ final class CompleteSigningResponse
     }
 
     /**
+     * ICP-Brasil signature timestamp (carimbo do tempo) embedded in the signature, when the
+     * tenant has the feature: keys genTime, tsaName, serial, policyOid, tokenSha256.
+     * genTime is the time attested by the ACT; digitalSignature.signedAt remains the
+     * SignDocs server time.
+     *
+     * @return array<string, string>|null
+     */
+    public function signatureTimestamp(): ?array
+    {
+        $ts = $this->result['digitalSignature']['signatureTimestamp'] ?? null;
+
+        return is_array($ts) ? $ts : null;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(): array

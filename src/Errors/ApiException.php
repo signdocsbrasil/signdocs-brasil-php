@@ -46,6 +46,15 @@ class ApiException extends SignDocsBrasilException
     }
 
     /**
+     * Stable machine-readable case, when the API gives one (e.g. TIMESTAMP_UNAVAILABLE).
+     * Named getErrorCode() because Exception::getCode() is final and holds the HTTP status.
+     */
+    public function getErrorCode(): ?string
+    {
+        return $this->problemDetail->errorCode();
+    }
+
+    /**
      * Parse an API error response and return the appropriate exception subclass.
      *
      * @param int                  $status     HTTP status code

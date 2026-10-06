@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Support for the ICP-Brasil signature timestamp (carimbo do tempo). On tenants with the
+  feature, the server embeds an RFC 3161 token from an accredited ACT in every digital-certificate
+  signature (PAdES-B-T / CAdES-T). Nothing changes in the signing flow.
+- `CompleteSigningResponse::signatureTimestamp()`, returning the `signatureTimestamp` array
+  (`genTime`, `tsaName`, `serial`, `policyOid`, `tokenSha256`) or `null`.
+- `ProblemDetail::errorCode()` / `ProblemDetail::isRetryable()` and
+  `ApiException::getErrorCode()` (`getCode()` is final in PHP and holds the HTTP status). A 503
+  with `getErrorCode() === 'TIMESTAMP_UNAVAILABLE'` means the ACT was unavailable: resend the same
+  signature after `Retry-After`.
+
 ## [2.1.0] - 2026-09-11
 
 ### Added

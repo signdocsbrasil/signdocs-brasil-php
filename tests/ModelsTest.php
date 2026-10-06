@@ -1707,4 +1707,33 @@ final class ModelsTest extends TestCase
 
         $this->assertSame('usable', $res->referenceQuality);
     }
+
+    public function testCompleteSigningResponseExposesSignatureTimestamp(): void
+    {
+        $fixture = $this->loadFixture('signing-complete-timestamp.json');
+        $resp = \SignDocsBrasil\Api\Models\CompleteSigningResponse::fromArray($fixture['response']['body']);
+        $ts = $resp->signatureTimestamp();
+
+        $this->assertNotNull($ts);
+        $this->assertSame('2024-11-15T12:05:02.123Z', $ts['genTime']);
+        $this->assertSame('2.16.76.1.6.2', $ts['policyOid']);
+    }
+
+    public function testCompleteSigningResponseWithoutTimestamp(): void
+    {
+        $fixture = $this->loadFixture('signing-complete.json');
+        $resp = \SignDocsBrasil\Api\Models\CompleteSigningResponse::fromArray($fixture['response']['body']);
+
+        $this->assertNull($resp->signatureTimestamp());
+    }
+
+    public function testTimestampUnavailableErrorCode(): void
+    {
+        $fixture = $this->loadFixture('error-503-timestamp.json');
+        $e = \SignDocsBrasil\Api\Errors\ApiException::fromResponse(503, $fixture['response']['body'], 30);
+
+        $this->assertInstanceOf(\SignDocsBrasil\Api\Errors\ServiceUnavailableException::class, $e);
+        $this->assertSame('TIMESTAMP_UNAVAILABLE', $e->getErrorCode());
+        $this->assertTrue($e->problemDetail->isRetryable());
+    }
 }
